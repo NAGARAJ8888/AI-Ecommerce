@@ -1,0 +1,14 @@
+{"level":"error","message":"404 - Not Found - /api - /api - GET - ::1","timestamp":"2026-03-06T16:15:11.896Z"}
+{"level":"error","message":"404 - Not Found - /api-docs - /api-docs - GET - ::1","timestamp":"2026-03-06T16:15:46.231Z"}
+{"level":"error","message":"404 - Not Found - /api-docs.json - /api-docs.json - GET - ::1","timestamp":"2026-03-06T16:15:56.581Z"}
+{"level":"error","message":"404 - Not Found - /api-docs - /api-docs - GET - ::1","timestamp":"2026-03-06T16:22:00.119Z"}
+{"level":"error","message":"404 - Not Found - /api-docs - /api-docs - GET - ::1","timestamp":"2026-03-06T16:22:01.317Z"}
+{"level":"error","message":"404 - Not Found - /api-docs - /api-docs - GET - ::1","timestamp":"2026-03-06T16:22:02.496Z"}
+{"level":"error","message":"404 - Not Found - /api-docs - /api-docs - GET - ::1","timestamp":"2026-03-06T16:22:03.582Z"}
+{"level":"error","message":"404 - Not Found - /api - /api - GET - ::1","timestamp":"2026-03-06T16:22:08.680Z"}
+{"level":"error","message":"404 - Not Found - /api-docs.json - /api-docs.json - GET - ::1","timestamp":"2026-03-06T16:22:17.088Z"}
+{"level":"error","message":"404 - Not Found - /api - /api - GET - ::1","timestamp":"2026-03-06T16:23:55.207Z"}
+{"level":"error","message":"404 - Not Found - /api - /api - GET - ::1","timestamp":"2026-03-06T16:34:42.467Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"product_id_here\" (type string) at path \"_id\" for model \"Product\" - /api/cart - POST - ::1","timestamp":"2026-03-06T17:13:36.356Z"}
+{"level":"error","message":"400 - User already exists - /api/users/register - POST - ::1","timestamp":"2026-03-06T18:19:54.009Z"}
+{"level":"error","message":"401 - Invalid credentials - /api/users/login - POST - ::1","timestamp":"2026-03-06T18:23:38.217Z"}
