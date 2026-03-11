@@ -26,7 +26,41 @@ export default function CheckoutPage() {
   const [step, setStep] = useState(1);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  const shipping = totalPrice > 200 ? 0 : 15;
+  // Shipping information state
+  const [shippingInfo, setShippingInfo] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    phone: "",
+    address: "",
+    city: "",
+    postalCode: "",
+    country: "us",
+  });
+  const [shippingMethod, setShippingMethod] = useState("standard");
+
+  // Payment information state
+  const [paymentInfo, setPaymentInfo] = useState({
+    cardName: "",
+    cardNumber: "",
+    expiry: "",
+    cvc: "",
+  });
+
+  const handleShippingChange = (field: string, value: string) => {
+    setShippingInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const handlePaymentChange = (field: string, value: string) => {
+    setPaymentInfo((prev) => ({ ...prev, [field]: value }));
+  };
+
+  const getShippingCost = () => {
+    if (shippingMethod === "express") return 25;
+    return totalPrice > 200 ? 0 : 15;
+  };
+
+  const shipping = getShippingCost();
   const total = totalPrice + shipping;
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -120,43 +154,83 @@ export default function CheckoutPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="firstName">First Name</Label>
-                        <Input id="firstName" required />
+                        <Input
+                          id="firstName"
+                          value={shippingInfo.firstName}
+                          onChange={(e) => handleShippingChange("firstName", e.target.value)}
+                          required
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="lastName">Last Name</Label>
-                        <Input id="lastName" required />
+                        <Input
+                          id="lastName"
+                          value={shippingInfo.lastName}
+                          onChange={(e) => handleShippingChange("lastName", e.target.value)}
+                          required
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="email">Email</Label>
-                      <Input id="email" type="email" required />
+                      <Input
+                        id="email"
+                        type="email"
+                        value={shippingInfo.email}
+                        onChange={(e) => handleShippingChange("email", e.target.value)}
+                        required
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="phone">Phone</Label>
-                      <Input id="phone" type="tel" required />
+                      <Input
+                        id="phone"
+                        type="tel"
+                        value={shippingInfo.phone}
+                        onChange={(e) => handleShippingChange("phone", e.target.value)}
+                        required
+                      />
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="address">Address</Label>
-                      <Input id="address" required />
+                      <Input
+                        id="address"
+                        value={shippingInfo.address}
+                        onChange={(e) => handleShippingChange("address", e.target.value)}
+                        required
+                      />
                     </div>
 
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="city">City</Label>
-                        <Input id="city" required />
+                        <Input
+                          id="city"
+                          value={shippingInfo.city}
+                          onChange={(e) => handleShippingChange("city", e.target.value)}
+                          required
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="postalCode">Postal Code</Label>
-                        <Input id="postalCode" required />
+                        <Input
+                          id="postalCode"
+                          value={shippingInfo.postalCode}
+                          onChange={(e) => handleShippingChange("postalCode", e.target.value)}
+                          required
+                        />
                       </div>
                     </div>
 
                     <div className="space-y-2">
                       <Label htmlFor="country">Country</Label>
-                      <Select defaultValue="us">
+                      <Select
+                        value={shippingInfo.country}
+                        onValueChange={(value) => handleShippingChange("country", value)}
+                      >
                         <SelectTrigger>
                           <SelectValue placeholder="Select country" />
                         </SelectTrigger>
@@ -171,7 +245,11 @@ export default function CheckoutPage() {
 
                     <div className="pt-4">
                       <h3 className="text-sm font-medium mb-3">Shipping Method</h3>
-                      <RadioGroup defaultValue="standard" className="space-y-3">
+                      <RadioGroup
+                        value={shippingMethod}
+                        onValueChange={setShippingMethod}
+                        className="space-y-3"
+                      >
                         <div className="flex items-center justify-between p-4 border border-border rounded-sm">
                           <div className="flex items-center gap-3">
                             <RadioGroupItem value="standard" id="standard" />
@@ -212,7 +290,12 @@ export default function CheckoutPage() {
 
                     <div className="space-y-2">
                       <Label htmlFor="cardName">Name on Card</Label>
-                      <Input id="cardName" required />
+                      <Input
+                        id="cardName"
+                        value={paymentInfo.cardName}
+                        onChange={(e) => handlePaymentChange("cardName", e.target.value)}
+                        required
+                      />
                     </div>
 
                     <div className="space-y-2">
@@ -220,6 +303,8 @@ export default function CheckoutPage() {
                       <Input
                         id="cardNumber"
                         placeholder="1234 5678 9012 3456"
+                        value={paymentInfo.cardNumber}
+                        onChange={(e) => handlePaymentChange("cardNumber", e.target.value)}
                         required
                       />
                     </div>
@@ -227,11 +312,23 @@ export default function CheckoutPage() {
                     <div className="grid grid-cols-2 gap-4">
                       <div className="space-y-2">
                         <Label htmlFor="expiry">Expiry Date</Label>
-                        <Input id="expiry" placeholder="MM/YY" required />
+                        <Input
+                          id="expiry"
+                          placeholder="MM/YY"
+                          value={paymentInfo.expiry}
+                          onChange={(e) => handlePaymentChange("expiry", e.target.value)}
+                          required
+                        />
                       </div>
                       <div className="space-y-2">
                         <Label htmlFor="cvc">CVC</Label>
-                        <Input id="cvc" placeholder="123" required />
+                        <Input
+                          id="cvc"
+                          placeholder="123"
+                          value={paymentInfo.cvc}
+                          onChange={(e) => handlePaymentChange("cvc", e.target.value)}
+                          required
+                        />
                       </div>
                     </div>
 
@@ -252,13 +349,27 @@ export default function CheckoutPage() {
                           Shipping Address
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          John Doe
+                          {shippingInfo.firstName} {shippingInfo.lastName}
                           <br />
-                          123 Main Street
+                          {shippingInfo.address}
                           <br />
-                          New York, NY 10001
+                          {shippingInfo.city}, {shippingInfo.postalCode}
                           <br />
-                          United States
+                          {shippingInfo.country === "us" && "United States"}
+                          {shippingInfo.country === "ca" && "Canada"}
+                          {shippingInfo.country === "uk" && "United Kingdom"}
+                          {shippingInfo.country === "au" && "Australia"}
+                        </p>
+                      </div>
+
+                      <div className="p-4 bg-secondary/50 rounded-sm">
+                        <h3 className="text-sm font-medium mb-2">
+                          Shipping Method
+                        </h3>
+                        <p className="text-sm text-muted-foreground">
+                          {shippingMethod === "standard" ? "Standard Shipping" : "Express Shipping"}
+                          <br />
+                          {shippingMethod === "standard" ? "5-7 business days" : "2-3 business days"}
                         </p>
                       </div>
 
@@ -267,7 +378,9 @@ export default function CheckoutPage() {
                           Payment Method
                         </h3>
                         <p className="text-sm text-muted-foreground">
-                          Visa ending in 3456
+                          {paymentInfo.cardName}
+                          <br />
+                          {paymentInfo.cardNumber ? `**** ${paymentInfo.cardNumber.slice(-4)}` : ""}
                         </p>
                       </div>
                     </div>
@@ -305,7 +418,7 @@ export default function CheckoutPage() {
                 <h2 className="text-lg font-medium mb-6">Order Summary</h2>
 
                 <div className="space-y-4 mb-6">
-                  {items.map((item) => (
+                  {items.map((item: { product: { id: string; name: string; image: string; price: number }; quantity: number; size?: string; color?: string }) => (
                     <div
                       key={`${item.product.id}-${item.size}-${item.color}`}
                       className="flex gap-4"

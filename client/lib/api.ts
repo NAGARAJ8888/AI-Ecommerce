@@ -488,3 +488,329 @@ export async function getFeaturedProducts(): Promise<ApiResponse<Product[]>> {
   }
 }
 
+// ==================== CART API FUNCTIONS ====================
+
+// Backend cart item interface (raw data from API)
+interface BackendCartItem {
+  product: BackendProduct;
+  quantity: number;
+  price: number;
+}
+
+// Frontend cart item interface (transformed)
+export interface CartItem {
+  product: Product;
+  quantity: number;
+  price: number;
+}
+
+interface CartData {
+  _id: string;
+  user: string;
+  items: BackendCartItem[];
+  totalPrice: number;
+  couponCode?: string;
+  discountAmount?: number;
+  finalPrice?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/**
+ * Transform backend product to frontend product
+ * This is a separate function to avoid type conflicts
+ */
+function transformBackendToFrontend(backendProduct: BackendProduct): Product {
+  const categoryName = typeof backendProduct.category === 'object' 
+    ? backendProduct.category.name 
+    : 'Uncategorized';
+  
+  const categorySlug = typeof backendProduct.category === 'object' 
+    ? backendProduct.category.slug 
+    : 'uncategorized';
+
+  const categoryId = typeof backendProduct.category === 'object' 
+    ? backendProduct.category._id 
+    : '';
+
+  return {
+    id: backendProduct._id,
+    name: backendProduct.name,
+    slug: backendProduct.slug,
+    description: backendProduct.description || '',
+    price: backendProduct.price,
+    originalPrice: backendProduct.discountPrice,
+    category: categoryName,
+    categoryId: categoryId,
+    categorySlug: categorySlug,
+    image: backendProduct.images && backendProduct.images.length > 0 
+      ? backendProduct.images[0].url 
+      : '/placeholder.jpg',
+    images: backendProduct.images?.map(img => img.url) || [],
+    brand: backendProduct.brand || '',
+    stock: backendProduct.stock,
+    inStock: backendProduct.stock > 0,
+    rating: backendProduct.ratings,
+    reviews: backendProduct.numReviews,
+    tags: backendProduct.tags || [],
+    aiScore: backendProduct.aiScore,
+    createdAt: backendProduct.createdAt,
+    sizes: [],
+    colors: [],
+  };
+}
+
+/**
+ * Transform backend cart item to frontend cart item
+ */
+function transformCartItem(backendItem: BackendCartItem): CartItem {
+  return {
+    product: transformBackendToFrontend(backendItem.product),
+    quantity: backendItem.quantity,
+    price: backendItem.price,
+  };
+}
+
+/**
+ * Transform backend cart to frontend format
+ */
+export function transformCart(cartData: CartData) {
+  return {
+    _id: cartData._id,
+    user: cartData.user,
+    items: cartData.items.map(transformCartItem),
+    totalPrice: cartData.totalPrice,
+    couponCode: cartData.couponCode,
+    discountAmount: cartData.discountAmount,
+    finalPrice: cartData.finalPrice,
+    createdAt: cartData.createdAt,
+    updatedAt: cartData.updatedAt,
+  };
+}
+
+/**
+ * Get user's cart from backend
+ */
+export async function getCart(): Promise<ApiResponse<CartData>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to view cart",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/cart`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to fetch cart",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching cart:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching cart",
+    };
+  }
+}
+
+/**
+ * Add item to cart
+ */
+export async function addToCart(
+  productId: string,
+  quantity: number = 1
+): Promise<ApiResponse<CartData>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to add items to cart",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/cart`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ productId, quantity }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to add item to cart",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error adding to cart:", error);
+    return {
+      success: false,
+      message: "An error occurred while adding to cart",
+    };
+  }
+}
+
+/**
+ * Update cart item quantity
+ */
+export async function updateCartItem(
+  productId: string,
+  quantity: number
+): Promise<ApiResponse<CartData>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to update cart",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/cart/${productId}`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ quantity }),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to update cart item",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error updating cart item:", error);
+    return {
+      success: false,
+      message: "An error occurred while updating cart item",
+    };
+  }
+}
+
+/**
+ * Remove item from cart
+ */
+export async function removeFromCart(
+  productId: string
+): Promise<ApiResponse<CartData>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to remove items from cart",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/cart/${productId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to remove item from cart",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error removing from cart:", error);
+    return {
+      success: false,
+      message: "An error occurred while removing from cart",
+    };
+  }
+}
+
+/**
+ * Clear all items from cart
+ */
+export async function clearCart(): Promise<ApiResponse<CartData>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to clear cart",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/cart`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to clear cart",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error clearing cart:", error);
+    return {
+      success: false,
+      message: "An error occurred while clearing cart",
+    };
+  }
+}
+

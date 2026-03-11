@@ -33,7 +33,7 @@ interface Product {
 
 const categories = [
   { name: "All", slug: "all" },
-  { name: "Clothing", slug: "clothing" },
+  { name: "Clothing", slug: "all" },
   { name: "Shoes", slug: "shoes" },
   { name: "Accessories", slug: "accessories" },
   { name: "Bags", slug: "bags" },
