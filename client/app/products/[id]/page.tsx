@@ -1,13 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useParams, notFound } from "next/navigation";
 import Image from "next/image";
 import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ProductCard } from "@/components/product/product-card";
-import { getProductById, products } from "@/lib/store";
+import { getProductById as getProductByIdApi, transformProduct } from "@/lib/api";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import {
@@ -18,31 +18,119 @@ import {
 } from "@/components/ui/accordion";
 import { ShoppingBag, Heart, Star, Minus, Plus, ChevronLeft } from "lucide-react";
 
+interface ProductData {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  categorySlug: string;
+  image: string;
+  images: string[];
+  sizes?: string[];
+  colors?: string[];
+  inStock: boolean;
+  rating?: number;
+  reviews?: number;
+}
+
 export default function ProductDetailPage() {
   const params = useParams();
-  const product = getProductById(params.id as string);
+  const [product, setProduct] = useState<ProductData | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [relatedProducts, setRelatedProducts] = useState<ProductData[]>([]);
 
   const { addItem } = useCart();
-  const [selectedSize, setSelectedSize] = useState<string | undefined>(
-    product?.sizes?.[0]
-  );
-  const [selectedColor, setSelectedColor] = useState<string | undefined>(
-    product?.colors?.[0]
-  );
+  const [selectedSize, setSelectedSize] = useState<string | undefined>();
+  const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [quantity, setQuantity] = useState(1);
   const [selectedImage, setSelectedImage] = useState(0);
 
-  if (!product) {
+  useEffect(() => {
+    const fetchProduct = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const result = await getProductByIdApi(params.id as string);
+        
+        if (result.success && result.data) {
+          const transformedProduct = transformProduct(result.data);
+          setProduct(transformedProduct);
+          
+          // Set default size and color if available
+          if (transformedProduct.sizes && transformedProduct.sizes.length > 0) {
+            setSelectedSize(transformedProduct.sizes[0]);
+          }
+          if (transformedProduct.colors && transformedProduct.colors.length > 0) {
+            setSelectedColor(transformedProduct.colors[0]);
+          }
+          
+          // Fetch related products from the same category
+          const relatedResult = await fetch(
+            `${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api'}/products?category=${transformedProduct.categorySlug}&limit=5`
+          ).then(res => res.json());
+          
+          if (relatedResult.success && relatedResult.data && relatedResult.data.data) {
+            const transformedRelated = relatedResult.data.data
+              .map((p: any) => transformProduct(p))
+              .filter((p: ProductData) => p.id !== transformedProduct.id)
+              .slice(0, 4);
+            setRelatedProducts(transformedRelated);
+          }
+        } else {
+          setError("Product not found");
+        }
+      } catch (err) {
+        setError("Failed to load product");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (params.id) {
+      fetchProduct();
+    }
+  }, [params.id]);
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen flex-col">
+        <Header />
+        <main className="flex-1 flex items-center justify-center">
+          <div className="animate-pulse text-muted-foreground">Loading...</div>
+        </main>
+        <Footer />
+      </div>
+    );
+  }
+
+  if (error || !product) {
     notFound();
   }
 
-  const images = product.images || [product.image];
-  const relatedProducts = products
-    .filter((p) => p.category === product.category && p.id !== product.id)
-    .slice(0, 4);
+  const images = product.images?.length > 0 ? product.images : [product.image];
 
   const handleAddToCart = () => {
-    addItem(product, quantity, selectedSize, selectedColor);
+    // Map to the Product type expected by cart context
+    const cartProduct = {
+      id: product.id,
+      name: product.name,
+      price: product.price,
+      originalPrice: product.originalPrice,
+      category: product.category,
+      categorySlug: product.categorySlug,
+      image: product.image,
+      images: product.images,
+      inStock: product.inStock,
+      rating: product.rating,
+      reviews: product.reviews,
+    };
+    addItem(cartProduct as any, quantity, selectedSize, selectedColor);
   };
 
   return (

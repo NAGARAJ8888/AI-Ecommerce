@@ -1,14 +1,66 @@
+"use client";
+
 import Link from "next/link";
 import Image from "next/image";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ProductCard } from "@/components/product/product-card";
-import { getFeaturedProducts, categories } from "@/lib/store";
+import { getFeaturedProducts } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { ArrowRight } from "lucide-react";
+import { useEffect, useState } from "react";
+
+interface Product {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  categorySlug?: string;
+  image: string;
+  images?: string[];
+  brand?: string;
+  stock?: number;
+  inStock?: boolean;
+  rating?: number;
+  reviews?: number;
+  tags?: string[];
+  aiScore?: number;
+  createdAt?: string;
+}
+
+const categories = [
+  { name: "All", slug: "all" },
+  { name: "Clothing", slug: "clothing" },
+  { name: "Shoes", slug: "shoes" },
+  { name: "Accessories", slug: "accessories" },
+  { name: "Bags", slug: "bags" },
+  { name: "Jewelry", slug: "jewelry" },
+  { name: "Watches", slug: "watches" },
+];
 
 export default function HomePage() {
-  const featuredProducts = getFeaturedProducts();
+  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function fetchFeaturedProducts() {
+      try {
+        const response = await getFeaturedProducts();
+        if (response.success && response.data) {
+          setFeaturedProducts(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching featured products:", error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchFeaturedProducts();
+  }, []);
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -104,11 +156,28 @@ export default function HomePage() {
                 <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
               </Link>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
-              {featuredProducts.map((product) => (
-                <ProductCard key={product.id} product={product} />
-              ))}
-            </div>
+            {loading ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="animate-pulse">
+                    <div className="aspect-[3/4] bg-secondary rounded-md" />
+                    <div className="mt-4 h-4 bg-secondary rounded w-1/4" />
+                    <div className="mt-2 h-4 bg-secondary rounded w-3/4" />
+                    <div className="mt-2 h-4 bg-secondary rounded w-1/3" />
+                  </div>
+                ))}
+              </div>
+            ) : featuredProducts.length > 0 ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8">
+                {featuredProducts.map((product) => (
+                  <ProductCard key={product.id} product={product} />
+                ))}
+              </div>
+            ) : (
+              <div className="text-center py-12">
+                <p className="text-muted-foreground">No featured products available at the moment.</p>
+              </div>
+            )}
           </div>
         </section>
 

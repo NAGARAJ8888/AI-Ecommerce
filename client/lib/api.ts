@@ -368,6 +368,31 @@ export async function getProducts(params: GetProductsParams = {}): Promise<ApiRe
   }
 }
 
+export async function getProductById(productId: string): Promise<ApiResponse<any>> {
+  try {
+    const response = await fetch(`${API_URL}/products/${productId}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to fetch product",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching the product",
+    };
+  }
+}
+
 // Helper function to transform backend product to frontend product
 export function transformProduct(backendProduct: BackendProduct) {
   const categoryName = typeof backendProduct.category === 'object' 
@@ -404,6 +429,9 @@ export function transformProduct(backendProduct: BackendProduct) {
     tags: backendProduct.tags || [],
     aiScore: backendProduct.aiScore,
     createdAt: backendProduct.createdAt,
+    // Sizes and colors will be derived from tags if available
+    sizes: [],
+    colors: [],
   };
 }
 
@@ -428,5 +456,35 @@ export interface Product {
   tags: string[];
   aiScore?: number;
   createdAt: string;
+  sizes?: string[];
+  colors?: string[];
+}
+
+export async function getFeaturedProducts(): Promise<ApiResponse<Product[]>> {
+  try {
+    const response = await fetch(`${API_URL}/products/featured?limit=4`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to fetch featured products",
+      };
+    }
+
+    // Transform the backend products to frontend format
+    const transformedProducts = (data.data || []).map(transformProduct);
+
+    return {
+      success: true,
+      data: transformedProducts,
+    };
+  } catch (error) {
+    console.error("Error fetching featured products:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching featured products",
+    };
+  }
 }
 

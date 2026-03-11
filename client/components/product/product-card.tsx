@@ -71,7 +71,7 @@ export function ProductCard({ product }: ProductCardProps) {
       <Button
         size="sm"
         variant="secondary"
-        className="absolute bottom-20 right-3 opacity-0 group-hover:opacity-100 transition-opacity"
+        className="absolute bottom-20 right-3 opacity-0 group-hover:opacity-100 transition-opacity  mb-2 cursor-pointer"
         onClick={(e) => {
           e.preventDefault();
           addItem(product);

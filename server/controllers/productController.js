@@ -28,9 +28,24 @@ export const getProducts = asyncHandler(async (req, res, next) => {
     ];
   }
 
-  // Category filter
+  // Category filter - support both category ID and category slug
   if (req.query.category) {
-    query.category = req.query.category;
+    const categoryParam = req.query.category;
+    
+    // Check if it's a valid MongoDB ObjectId (24 hex characters)
+    const isObjectId = /^[a-fA-F0-9]{24}$/.test(categoryParam);
+    
+    if (isObjectId) {
+      // It's a category ID
+      query.category = categoryParam;
+    } else {
+      // It's a category slug - look up the category
+      const category = await Category.findOne({ slug: categoryParam });
+      if (category) {
+        query.category = category._id;
+      }
+      // If category not found, query will return empty (no products)
+    }
   }
 
   // Brand filter
@@ -106,11 +121,7 @@ export const getProducts = asyncHandler(async (req, res, next) => {
  */
 export const getProductById = asyncHandler(async (req, res, next) => {
   const product = await Product.findById(req.params.id)
-    .populate("category", "name slug description")
-    .populate({
-      path: "reviews",
-      populate: { path: "user", select: "name avatar" }
-    });
+    .populate("category", "name slug description");
 
   if (!product) {
     throw new AppError("Product not found", 404);
