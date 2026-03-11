@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -35,7 +35,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createProduct } from "@/lib/api";
+import { createProduct, getCategories } from "@/lib/api";
 
 // Form validation schema
 const productSchema = z.object({
@@ -52,15 +52,11 @@ const productSchema = z.object({
 
 type ProductFormValues = z.infer<typeof productSchema>;
 
-// Predefined categories (matching backend)
-const CATEGORIES = [
-  { id: "outerwear", name: "Outerwear" },
-  { id: "blazers", name: "Blazers" },
-  { id: "knitwear", name: "Knitwear" },
-  { id: "bottoms", name: "Bottoms" },
-  { id: "shirts", name: "Shirts" },
-  { id: "accessories", name: "Accessories" },
-];
+interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+}
 
 interface ProductFormDialogProps {
   open: boolean;
@@ -77,6 +73,29 @@ export function ProductFormDialog({
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [loadingCategories, setLoadingCategories] = useState(false);
+
+  // Fetch categories from API
+  useEffect(() => {
+    const fetchCategories = async () => {
+      if (!open) return;
+      
+      setLoadingCategories(true);
+      try {
+        const result = await getCategories();
+        if (result.success && result.data) {
+          setCategories(result.data as Category[]);
+        }
+      } catch (err) {
+        console.error("Error fetching categories:", err);
+      } finally {
+        setLoadingCategories(false);
+      }
+    };
+
+    fetchCategories();
+  }, [open]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -328,15 +347,16 @@ export function ProductFormDialog({
                     <Select
                       onValueChange={field.onChange}
                       defaultValue={field.value}
+                      disabled={loadingCategories}
                     >
                       <FormControl>
                         <SelectTrigger>
-                          <SelectValue placeholder="Select category" />
+                          <SelectValue placeholder={loadingCategories ? "Loading..." : "Select category"} />
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {CATEGORIES.map((cat) => (
-                          <SelectItem key={cat.id} value={cat.id}>
+                        {categories.map((cat) => (
+                          <SelectItem key={cat._id} value={cat._id}>
                             {cat.name}
                           </SelectItem>
                         ))}

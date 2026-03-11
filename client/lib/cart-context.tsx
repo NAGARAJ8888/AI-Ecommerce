@@ -7,7 +7,14 @@ import {
   useCallback,
   type ReactNode,
 } from "react";
-import type { Product, CartItem } from "./store";
+import type { Product } from "@/components/product/product-card";
+
+interface CartItem {
+  product: Product;
+  quantity: number;
+  size?: string;
+  color?: string;
+}
 
 interface CartContextType {
   items: CartItem[];

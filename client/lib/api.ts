@@ -1,5 +1,48 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+interface ProductImage {
+  url: string;
+  public_id: string;
+}
+
+interface CategoryData {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+}
+
+interface BackendProduct {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  price: number;
+  discountPrice?: number;
+  category: CategoryData | string;
+  brand?: string;
+  images: ProductImage[];
+  stock: number;
+  ratings: number;
+  numReviews: number;
+  tags?: string[];
+  aiScore?: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+interface ProductsResponse {
+  data: BackendProduct[];
+  pagination: Pagination;
+}
+
 interface CreateProductData {
   name: string;
   slug: string;
@@ -118,5 +161,105 @@ export async function getCategories(): Promise<ApiResponse<any[]>> {
       message: "An error occurred while fetching categories",
     };
   }
+}
+
+interface GetProductsParams {
+  page?: number;
+  limit?: number;
+  category?: string;
+  sort?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+}
+
+export async function getProducts(params: GetProductsParams = {}): Promise<ApiResponse<ProductsResponse>> {
+  try {
+    const { page = 1, limit = 12, category, sort, search, minPrice, maxPrice } = params;
+
+    // Build query string
+    const queryParams = new URLSearchParams();
+    queryParams.append("page", page.toString());
+    queryParams.append("limit", limit.toString());
+
+    if (category && category !== "all") {
+      queryParams.append("category", category);
+    }
+    if (sort) {
+      queryParams.append("sort", sort);
+    }
+    if (search) {
+      queryParams.append("search", search);
+    }
+    if (minPrice) {
+      queryParams.append("minPrice", minPrice.toString());
+    }
+    if (maxPrice) {
+      queryParams.append("maxPrice", maxPrice.toString());
+    }
+
+    const response = await fetch(`${API_URL}/products?${queryParams.toString()}`);
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to fetch products",
+      };
+    }
+
+    return {
+      success: true,
+      data: {
+        data: data.data || [],
+        pagination: data.pagination || {
+          page: 1,
+          limit: 12,
+          total: 0,
+          pages: 0
+        }
+      },
+    };
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching products",
+    };
+  }
+}
+
+// Helper function to transform backend product to frontend product
+export function transformProduct(backendProduct: BackendProduct) {
+  const categoryName = typeof backendProduct.category === 'object' 
+    ? backendProduct.category.name 
+    : 'Uncategorized';
+  
+  const categorySlug = typeof backendProduct.category === 'object' 
+    ? backendProduct.category.slug 
+    : 'uncategorized';
+
+  return {
+    id: backendProduct._id,
+    name: backendProduct.name,
+    slug: backendProduct.slug,
+    description: backendProduct.description || '',
+    price: backendProduct.price,
+    originalPrice: backendProduct.discountPrice,
+    category: categoryName,
+    categorySlug: categorySlug,
+    image: backendProduct.images && backendProduct.images.length > 0 
+      ? backendProduct.images[0].url 
+      : '/placeholder.jpg',
+    images: backendProduct.images?.map(img => img.url) || [],
+    brand: backendProduct.brand || '',
+    stock: backendProduct.stock,
+    inStock: backendProduct.stock > 0,
+    rating: backendProduct.ratings,
+    reviews: backendProduct.numReviews,
+    tags: backendProduct.tags || [],
+    aiScore: backendProduct.aiScore,
+    createdAt: backendProduct.createdAt,
+  };
 }
 

@@ -2,10 +2,30 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Product } from "@/lib/store";
 import { useCart } from "@/lib/cart-context";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
+
+export interface Product {
+  id: string;
+  name: string;
+  slug?: string;
+  description?: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  categorySlug?: string;
+  image: string;
+  images?: string[];
+  brand?: string;
+  stock?: number;
+  inStock?: boolean;
+  rating?: number;
+  reviews?: number;
+  tags?: string[];
+  aiScore?: number;
+  createdAt?: string;
+}
 
 interface ProductCardProps {
   product: Product;

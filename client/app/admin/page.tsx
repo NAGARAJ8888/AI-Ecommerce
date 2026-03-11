@@ -1,10 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
-import { products } from "@/lib/store";
+import { getProducts, transformProduct } from "@/lib/api";
+import { Product } from "@/components/product/product-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -39,38 +40,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 
-// Mock data for dashboard
-const stats = [
-  {
-    title: "Total Revenue",
-    value: "$45,231.89",
-    change: "+20.1%",
-    trend: "up",
-    icon: DollarSign,
-  },
-  {
-    title: "Orders",
-    value: "2,350",
-    change: "+180.1%",
-    trend: "up",
-    icon: ShoppingCart,
-  },
-  {
-    title: "Products",
-    value: products.length.toString(),
-    change: "+19%",
-    trend: "up",
-    icon: Package,
-  },
-  {
-    title: "Active Customers",
-    value: "573",
-    change: "-5.2%",
-    trend: "down",
-    icon: Users,
-  },
-];
-
+// Mock data for recent orders (can be replaced with API later)
 const recentOrders = [
   {
     id: "ORD-001",
@@ -125,12 +95,81 @@ export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Dashboard");
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
 
-  const filteredProducts = products.filter(
-    (p) =>
-      p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      p.category.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Fetch products from API
+  useEffect(() => {
+    const fetchProducts = async () => {
+      setLoading(true);
+      setError(null);
+      
+      try {
+        const result = await getProducts({ limit: 100 });
+        if (result.success && result.data) {
+          const transformedProducts = result.data.data.map(transformProduct);
+          setProducts(transformedProducts);
+        } else {
+          setError(result.message || "Failed to fetch products");
+        }
+      } catch (err) {
+        setError("An error occurred while fetching products");
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProducts();
+  }, [refreshKey]);
+
+  const filteredProducts = useMemo(() => {
+    return products.filter(
+      (p) =>
+        p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.category.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+  }, [products, searchTerm]);
+
+  // Calculate stats from actual product data
+  const stats = useMemo(() => {
+    const totalProducts = products.length;
+    const inStockProducts = products.filter(p => p.inStock).length;
+    const outOfStockProducts = totalProducts - inStockProducts;
+    
+    return [
+      {
+        title: "Total Revenue",
+        value: "$45,231.89",
+        change: "+20.1%",
+        trend: "up",
+        icon: DollarSign,
+      },
+      {
+        title: "Orders",
+        value: "2,350",
+        change: "+180.1%",
+        trend: "up",
+        icon: ShoppingCart,
+      },
+      {
+        title: "Products",
+        value: totalProducts.toString(),
+        change: `${outOfStockProducts} out of stock`,
+        trend: outOfStockProducts > 0 ? "warning" : "up",
+        icon: Package,
+      },
+      {
+        title: "Active Customers",
+        value: "573",
+        change: "-5.2%",
+        trend: "down",
+        icon: Users,
+      },
+    ];
+  }, [products]);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -145,6 +184,12 @@ export default function AdminDashboard() {
       default:
         return "bg-secondary text-foreground";
     }
+  };
+
+  // Handle product dialog success
+  const handleProductSuccess = () => {
+    setRefreshKey(prev => prev + 1);
+    setIsProductDialogOpen(false);
   };
 
   return (
@@ -492,10 +537,7 @@ export default function AdminDashboard() {
       <ProductFormDialog
         open={isProductDialogOpen}
         onOpenChange={setIsProductDialogOpen}
-        onSuccess={() => {
-          // Optionally refresh products or show success message
-          console.log("Product created successfully");
-        }}
+        onSuccess={handleProductSuccess}
       />
     </div>
   );
