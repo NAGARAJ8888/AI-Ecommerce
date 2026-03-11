@@ -12,3 +12,12 @@
 {"level":"error","message":"500 - Cast to ObjectId failed for value \"product_id_here\" (type string) at path \"_id\" for model \"Product\" - /api/cart - POST - ::1","timestamp":"2026-03-06T17:13:36.356Z"}
 {"level":"error","message":"400 - User already exists - /api/users/register - POST - ::1","timestamp":"2026-03-06T18:19:54.009Z"}
 {"level":"error","message":"401 - Invalid credentials - /api/users/login - POST - ::1","timestamp":"2026-03-06T18:23:38.217Z"}
+{"level":"error","message":"401 - Invalid credentials - /api/users/login - POST - ::1","timestamp":"2026-03-11T11:58:04.198Z"}
+{"level":"error","message":"401 - Invalid credentials - /api/users/login - POST - ::1","timestamp":"2026-03-11T11:58:33.789Z"}
+{"level":"error","message":"500 - Cannot destructure property 'name' of 'req.body' as it is undefined. - /api/products - POST - ::1","timestamp":"2026-03-11T12:02:38.669Z"}
+{"level":"error","message":"500 - Product validation failed: category: Cast to ObjectId failed for value \"blazers\" (type string) at path \"category\" because of \"BSONError\" - /api/products - POST - ::1","timestamp":"2026-03-11T13:03:39.159Z"}
+{"level":"error","message":"500 - Failed to upload image - /api/products - POST - ::1","timestamp":"2026-03-11T13:21:34.466Z"}
+{"level":"error","message":"500 - Product validation failed: category: Cast to ObjectId failed for value \"blazers\" (type string) at path \"category\" because of \"BSONError\" - /api/products - POST - ::1","timestamp":"2026-03-11T13:25:22.995Z"}
+{"level":"info","message":"Product created: SHIRT","timestamp":"2026-03-11T13:31:18.271Z"}
+{"level":"info","message":"Product created: pant","timestamp":"2026-03-11T13:32:59.080Z"}
+{"level":"info","message":"Product created: sassa","timestamp":"2026-03-11T13:33:46.352Z"}

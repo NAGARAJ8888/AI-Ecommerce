@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { useAuth } from "@/lib/auth-context";
 import { products } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,6 +22,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { ProductFormDialog } from "@/components/admin/product-form-dialog";
 import {
   LayoutDashboard,
   Package,
@@ -34,6 +36,7 @@ import {
   ArrowUpRight,
   ArrowDownRight,
   ChevronLeft,
+  AlertCircle,
 } from "lucide-react";
 
 // Mock data for dashboard
@@ -121,6 +124,7 @@ const navItems = [
 export default function AdminDashboard() {
   const [searchTerm, setSearchTerm] = useState("");
   const [activeTab, setActiveTab] = useState("Dashboard");
+  const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
 
   const filteredProducts = products.filter(
     (p) =>
@@ -170,7 +174,7 @@ export default function AdminDashboard() {
                 onChange={(e) => setSearchTerm(e.target.value)}
               />
             </div>
-            <Button size="sm">
+            <Button size="sm" onClick={() => setIsProductDialogOpen(true)}>
               <Plus className="h-4 w-4 mr-2" />
               Add Product
             </Button>
@@ -301,7 +305,7 @@ export default function AdminDashboard() {
             <div className="space-y-6">
               <div className="flex items-center justify-between">
                 <h2 className="text-xl font-medium">Products</h2>
-                <Button size="sm">
+                <Button size="sm" onClick={() => setIsProductDialogOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Add Product
                 </Button>
@@ -483,6 +487,16 @@ export default function AdminDashboard() {
           )}
         </main>
       </div>
+
+      {/* Product Form Dialog */}
+      <ProductFormDialog
+        open={isProductDialogOpen}
+        onOpenChange={setIsProductDialogOpen}
+        onSuccess={() => {
+          // Optionally refresh products or show success message
+          console.log("Product created successfully");
+        }}
+      />
     </div>
   );
 }

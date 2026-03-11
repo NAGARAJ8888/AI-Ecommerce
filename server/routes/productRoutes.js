@@ -1,4 +1,6 @@
 import express from "express";
+import multer from "multer";
+import path from "path";
 import {
   getProducts,
   getProductById,
@@ -18,6 +20,34 @@ import {
 import { protect, admin } from "../middleware/authMiddleware.js";
 
 const router = express.Router();
+
+// Configure multer for image uploads
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, "uploads/");
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + path.extname(file.originalname));
+  },
+});
+
+const upload = multer({
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024, // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = /jpeg|jpg|png|webp|gif/;
+    const extname = allowedTypes.test(
+      path.extname(file.originalname).toLowerCase()
+    );
+    const mimetype = allowedTypes.test(file.mimetype);
+    if (extname && mimetype) {
+      return cb(null, true);
+    }
+    cb(new Error("Only image files are allowed!"));
+  },
+});
 
 /**
  * @swagger
@@ -237,8 +267,8 @@ router.get("/slug/:slug", getProductBySlug);
 router.get("/:id", getProductById);
 
 // Admin only routes
-router.post("/", protect, admin, createProduct);
-router.put("/:id", protect, admin, updateProduct);
+router.post("/", protect, admin, upload.array("images", 5), createProduct);
+router.put("/:id", protect, admin, upload.array("images", 5), updateProduct);
 router.delete("/:id", protect, admin, deleteProduct);
 router.put("/:id/stock", protect, admin, updateProductStock);
 router.get("/admin/stats", protect, admin, getProductStats);
