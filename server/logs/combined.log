@@ -21,3 +21,27 @@
 {"level":"info","message":"Product created: SHIRT","timestamp":"2026-03-11T13:31:18.271Z"}
 {"level":"info","message":"Product created: pant","timestamp":"2026-03-11T13:32:59.080Z"}
 {"level":"info","message":"Product created: sassa","timestamp":"2026-03-11T13:33:46.352Z"}
+{"level":"info","message":"Product created: Ocean Spirit","timestamp":"2026-03-11T14:06:30.778Z"}
+{"level":"info","message":"Product updated: Shirt","timestamp":"2026-03-11T14:21:53.409Z"}
+{"level":"info","message":"Product updated: Shirt","timestamp":"2026-03-11T14:22:35.541Z"}
+{"level":"info","message":"Product updated: Shirt","timestamp":"2026-03-11T14:23:12.543Z"}
+{"level":"info","message":"Product updated: Shirt","timestamp":"2026-03-11T14:27:43.786Z"}
+{"level":"info","message":"Product updated: Shirt","timestamp":"2026-03-11T14:27:53.653Z"}
+{"level":"info","message":"Product deleted: Shirt","timestamp":"2026-03-11T14:28:01.011Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"accessories\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=accessories - GET - ::1","timestamp":"2026-03-11T16:23:52.918Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"accessories\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=accessories - GET - ::1","timestamp":"2026-03-11T16:23:58.131Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"blazers\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=blazers - GET - ::1","timestamp":"2026-03-11T16:23:59.833Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"bottoms\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=bottoms - GET - ::1","timestamp":"2026-03-11T16:24:01.323Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"knitwear\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=knitwear - GET - ::1","timestamp":"2026-03-11T16:24:02.533Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"outerwear\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=outerwear - GET - ::1","timestamp":"2026-03-11T16:24:03.712Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"shirts\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=shirts - GET - ::1","timestamp":"2026-03-11T16:24:04.967Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"accessories\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=accessories - GET - ::1","timestamp":"2026-03-11T16:24:09.489Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"accessories\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=accessories - GET - ::1","timestamp":"2026-03-11T16:24:13.174Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"blazers\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=blazers - GET - ::1","timestamp":"2026-03-11T16:24:23.479Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"bottoms\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=bottoms - GET - ::1","timestamp":"2026-03-11T16:24:24.710Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"knitwear\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=knitwear - GET - ::1","timestamp":"2026-03-11T16:24:25.840Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"outerwear\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=outerwear - GET - ::1","timestamp":"2026-03-11T16:24:26.884Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"shirts\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=shirts - GET - ::1","timestamp":"2026-03-11T16:24:27.963Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"accessories\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=accessories - GET - ::1","timestamp":"2026-03-11T16:24:31.887Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"blazers\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=blazers - GET - ::1","timestamp":"2026-03-11T16:24:53.085Z"}
+{"level":"error","message":"500 - Cast to ObjectId failed for value \"accessories\" (type string) at path \"category\" for model \"Product\" - /api/products?page=1&limit=50&category=accessories - GET - ::1","timestamp":"2026-03-11T16:25:02.829Z"}

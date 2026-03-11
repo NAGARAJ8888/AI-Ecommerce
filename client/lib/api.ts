@@ -163,6 +163,145 @@ export async function getCategories(): Promise<ApiResponse<any[]>> {
   }
 }
 
+interface UpdateProductData {
+  name?: string;
+  slug?: string;
+  description?: string;
+  price?: number;
+  discountPrice?: number;
+  category?: string;
+  brand?: string;
+  stock?: number;
+  tags?: string;
+  images?: File[];
+}
+
+export async function updateProduct(
+  productId: string,
+  productData: UpdateProductData
+): Promise<ApiResponse<any>> {
+  try {
+    const formData = new FormData();
+
+    // Append text fields
+    if (productData.name) {
+      formData.append("name", productData.name);
+    }
+    if (productData.slug) {
+      formData.append("slug", productData.slug);
+    }
+    if (productData.description) {
+      formData.append("description", productData.description);
+    }
+    if (productData.price !== undefined) {
+      formData.append("price", productData.price.toString());
+    }
+    if (productData.discountPrice !== undefined) {
+      formData.append("discountPrice", productData.discountPrice.toString());
+    }
+    if (productData.category && productData.category.match(/^[a-fA-F0-9]{24}$/)) {
+      formData.append("category", productData.category);
+    }
+    if (productData.brand) {
+      formData.append("brand", productData.brand);
+    }
+    if (productData.stock !== undefined) {
+      formData.append("stock", productData.stock.toString());
+    }
+    if (productData.tags) {
+      formData.append("tags", productData.tags);
+    }
+
+    // Append images
+    if (productData.images && productData.images.length > 0) {
+      productData.images.forEach((image) => {
+        formData.append("images", image);
+      });
+    }
+
+    // Get token from localStorage
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to update a product",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/products/${productId}`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to update product",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error updating product:", error);
+    return {
+      success: false,
+      message: "An error occurred while updating the product",
+    };
+  }
+}
+
+export async function deleteProduct(
+  productId: string
+): Promise<ApiResponse<any>> {
+  try {
+    // Get token from localStorage
+    const token = localStorage.getItem("token");
+    
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to delete a product",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/products/${productId}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to delete product",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error deleting product:", error);
+    return {
+      success: false,
+      message: "An error occurred while deleting the product",
+    };
+  }
+}
+
 interface GetProductsParams {
   page?: number;
   limit?: number;
@@ -239,6 +378,10 @@ export function transformProduct(backendProduct: BackendProduct) {
     ? backendProduct.category.slug 
     : 'uncategorized';
 
+  const categoryId = typeof backendProduct.category === 'object' 
+    ? backendProduct.category._id 
+    : '';
+
   return {
     id: backendProduct._id,
     name: backendProduct.name,
@@ -247,6 +390,7 @@ export function transformProduct(backendProduct: BackendProduct) {
     price: backendProduct.price,
     originalPrice: backendProduct.discountPrice,
     category: categoryName,
+    categoryId: categoryId,
     categorySlug: categorySlug,
     image: backendProduct.images && backendProduct.images.length > 0 
       ? backendProduct.images[0].url 
@@ -261,5 +405,28 @@ export function transformProduct(backendProduct: BackendProduct) {
     aiScore: backendProduct.aiScore,
     createdAt: backendProduct.createdAt,
   };
+}
+
+// Product type for frontend use
+export interface Product {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number;
+  originalPrice?: number;
+  category: string;
+  categoryId?: string;
+  categorySlug: string;
+  image: string;
+  images: string[];
+  brand: string;
+  stock: number;
+  inStock: boolean;
+  rating: number;
+  reviews: number;
+  tags: string[];
+  aiScore?: number;
+  createdAt: string;
 }
 

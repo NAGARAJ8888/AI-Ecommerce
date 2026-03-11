@@ -26,7 +26,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import {
   Select,
@@ -35,7 +34,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { createProduct, getCategories } from "@/lib/api";
+import { createProduct, getCategories, updateProduct, Product } from "@/lib/api";
 
 // Form validation schema
 const productSchema = z.object({
@@ -62,19 +61,24 @@ interface ProductFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onSuccess?: () => void;
+  product?: Product | null; // Add product prop for edit mode
 }
 
 export function ProductFormDialog({
   open,
   onOpenChange,
   onSuccess,
+  product,
 }: ProductFormDialogProps) {
   const [images, setImages] = useState<File[]>([]);
   const [imagePreviews, setImagePreviews] = useState<string[]>([]);
+  const [existingImages, setExistingImages] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loadingCategories, setLoadingCategories] = useState(false);
+
+  const isEditMode = !!product;
 
   // Fetch categories from API
   useEffect(() => {
@@ -96,6 +100,43 @@ export function ProductFormDialog({
 
     fetchCategories();
   }, [open]);
+
+// Reset form when product changes or dialog opens
+  useEffect(() => {
+    if (open && product) {
+      // Edit mode - populate form with existing product data
+      form.reset({
+        name: product.name || "",
+        slug: product.slug || "",
+        description: product.description || "",
+        price: product.price || 0,
+        discountPrice: product.originalPrice || undefined,
+        category: product.categoryId || "",
+        brand: product.brand || "",
+        stock: product.stock || 0,
+        tags: product.tags?.join(", ") || "",
+      });
+      setExistingImages(product.images || []);
+      setImagePreviews([]);
+      setImages([]);
+    } else if (open) {
+      // Create mode - reset form
+      form.reset({
+        name: "",
+        slug: "",
+        description: "",
+        price: 0,
+        discountPrice: undefined,
+        category: "",
+        brand: "",
+        stock: 0,
+        tags: "",
+      });
+      setExistingImages([]);
+      setImagePreviews([]);
+      setImages([]);
+    }
+  }, [open, product]);
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -138,10 +179,15 @@ export function ProductFormDialog({
     }
   };
 
-  // Remove image
+  // Remove new image
   const removeImage = (index: number) => {
     setImages((prev) => prev.filter((_, i) => i !== index));
     setImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  // Remove existing image
+  const removeExistingImage = (url: string) => {
+    setExistingImages((prev) => prev.filter((img) => img !== url));
   };
 
   // Submit form
@@ -169,19 +215,30 @@ export function ProductFormDialog({
         }
       }
 
-      const result = await createProduct({
-        ...data,
-        images,
-      });
+      let result;
+      if (isEditMode && product) {
+        // Update existing product
+        result = await updateProduct(product.id, {
+          ...data,
+          images,
+        });
+      } else {
+        // Create new product
+        result = await createProduct({
+          ...data,
+          images,
+        });
+      }
 
       if (result.success) {
         form.reset();
         setImages([]);
         setImagePreviews([]);
+        setExistingImages([]);
         onOpenChange(false);
         onSuccess?.();
       } else {
-        setError(result.message || "Failed to create product");
+        setError(result.message || (isEditMode ? "Failed to update product" : "Failed to create product"));
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -197,6 +254,7 @@ export function ProductFormDialog({
       form.reset();
       setImages([]);
       setImagePreviews([]);
+      setExistingImages([]);
       setError(null);
     }
     onOpenChange(isOpen);
@@ -206,9 +264,11 @@ export function ProductFormDialog({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add New Product</DialogTitle>
+          <DialogTitle>{isEditMode ? "Edit Product" : "Add New Product"}</DialogTitle>
           <DialogDescription>
-            Create a new product. Fill in the details below.
+            {isEditMode 
+              ? "Update the product details below." 
+              : "Create a new product. Fill in the details below."}
           </DialogDescription>
         </DialogHeader>
 
@@ -234,7 +294,10 @@ export function ProductFormDialog({
                       {...field}
                       onChange={(e) => {
                         field.onChange(e);
-                        handleNameChange(e.target.value);
+                        // Only auto-generate slug in create mode or if name was manually changed
+                        if (!isEditMode) {
+                          handleNameChange(e.target.value);
+                        }
                       }}
                     />
                   </FormControl>
@@ -251,10 +314,14 @@ export function ProductFormDialog({
                 <FormItem>
                   <FormLabel>Slug *</FormLabel>
                   <FormControl>
-                    <Input placeholder="product-slug" {...field} />
+                    <Input 
+                      placeholder="product-slug" 
+                      {...field} 
+                      disabled={isEditMode} // Disable slug editing in edit mode
+                    />
                   </FormControl>
                   <FormDescription>
-                    URL-friendly identifier (auto-generated from name)
+                    URL-friendly identifier {isEditMode ? "(cannot be changed)" : "(auto-generated from name)"}
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -429,10 +496,32 @@ export function ProductFormDialog({
               <FormLabel>Product Images</FormLabel>
               <div className="border-2 border-dashed border-border rounded-lg p-4">
                 <div className="flex flex-wrap gap-4">
-                  {/* Image Previews */}
+                  {/* Existing Image Previews */}
+                  {existingImages.map((url, index) => (
+                    <div
+                      key={`existing-${index}`}
+                      className="relative w-20 h-20 rounded-md overflow-hidden border"
+                    >
+                      <Image
+                        src={url}
+                        alt={`Existing ${index + 1}`}
+                        fill
+                        className="object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeExistingImage(url)}
+                        className="absolute top-0 right-0 bg-destructive text-destructive-foreground rounded-full p-0.5 m-1"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ))}
+
+                  {/* New Image Previews */}
                   {imagePreviews.map((preview, index) => (
                     <div
-                      key={index}
+                      key={`new-${index}`}
                       className="relative w-20 h-20 rounded-md overflow-hidden border"
                     >
                       <Image
@@ -483,10 +572,10 @@ export function ProductFormDialog({
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Creating...
+                    {isEditMode ? "Updating..." : "Creating..."}
                   </>
                 ) : (
-                  "Create Product"
+                  isEditMode ? "Update Product" : "Create Product"
                 )}
               </Button>
             </DialogFooter>

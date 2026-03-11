@@ -4,8 +4,7 @@ import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth-context";
-import { getProducts, transformProduct } from "@/lib/api";
-import { Product } from "@/components/product/product-card";
+import { getProducts, transformProduct, deleteProduct, Product } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -22,8 +21,19 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ProductFormDialog } from "@/components/admin/product-form-dialog";
+import { toast } from "@/components/ui/use-toast";
 import {
   LayoutDashboard,
   Package,
@@ -99,6 +109,14 @@ export default function AdminDashboard() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  
+  // Edit mode state
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  
+  // Delete confirmation state
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [deletingProduct, setDeletingProduct] = useState<Product | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Fetch products from API
   useEffect(() => {
@@ -400,7 +418,7 @@ export default function AdminDashboard() {
                               {product.inStock ? "In Stock" : "Out of Stock"}
                             </span>
                           </TableCell>
-                          <TableCell>
+<TableCell>
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="ghost" size="icon">
@@ -408,9 +426,16 @@ export default function AdminDashboard() {
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end">
-                                <DropdownMenuItem>Edit</DropdownMenuItem>
-                                <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                                <DropdownMenuItem className="text-destructive">
+                                <DropdownMenuItem onClick={() => {
+                                  setEditingProduct(product);
+                                  setIsProductDialogOpen(true);
+                                }}>
+                                  Edit
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  setDeletingProduct(product);
+                                  setIsDeleteDialogOpen(true);
+                                }} className="text-destructive">
                                   Delete
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
@@ -533,12 +558,70 @@ export default function AdminDashboard() {
         </main>
       </div>
 
-      {/* Product Form Dialog */}
+{/* Product Form Dialog */}
       <ProductFormDialog
         open={isProductDialogOpen}
-        onOpenChange={setIsProductDialogOpen}
+        onOpenChange={(open) => {
+          setIsProductDialogOpen(open);
+          if (!open) {
+            setEditingProduct(null);
+          }
+        }}
         onSuccess={handleProductSuccess}
+        product={editingProduct}
       />
+      
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Product</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete "{deletingProduct?.name}"? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setDeletingProduct(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={async () => {
+                if (!deletingProduct) return;
+                
+                setIsDeleting(true);
+                try {
+                  const result = await deleteProduct(deletingProduct.id);
+                  if (result.success) {
+                    toast({
+                      title: "Product deleted",
+                      description: `${deletingProduct.name} has been deleted successfully.`,
+                    });
+                    setRefreshKey(prev => prev + 1);
+                  } else {
+                    toast({
+                      title: "Error",
+                      description: result.message || "Failed to delete product",
+                      variant: "destructive",
+                    });
+                  }
+                } catch (err) {
+                  toast({
+                    title: "Error",
+                    description: "An unexpected error occurred",
+                    variant: "destructive",
+                  });
+                } finally {
+                  setIsDeleting(false);
+                  setIsDeleteDialogOpen(false);
+                  setDeletingProduct(null);
+                }
+              }}
+              disabled={isDeleting}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              {isDeleting ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
