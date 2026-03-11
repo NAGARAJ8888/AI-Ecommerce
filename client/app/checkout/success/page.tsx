@@ -1,11 +1,16 @@
+"use client";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { Button } from "@/components/ui/button";
 import { CheckCircle, Package, ArrowRight } from "lucide-react";
 
 export default function CheckoutSuccessPage() {
-  const orderNumber = `ORD-${Date.now().toString(36).toUpperCase()}`;
+  const searchParams = useSearchParams();
+  const orderId = searchParams.get("orderId");
+  const orderNumber = orderId || `ORD-${Date.now().toString(36).toUpperCase()}`;
 
   return (
     <div className="flex min-h-screen flex-col">

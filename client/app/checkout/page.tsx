@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useCart } from "@/lib/cart-context";
+import { createOrder } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -69,10 +70,47 @@ export default function CheckoutPage() {
       setStep(step + 1);
     } else {
       setIsProcessing(true);
-      // Simulate order processing
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-      clearCart();
-      router.push("/checkout/success");
+      
+      try {
+        // Prepare shipping address in backend format
+        const shippingAddress = {
+          street: shippingInfo.address,
+          city: shippingInfo.city,
+          state: "", // Not collected in frontend
+          zipCode: shippingInfo.postalCode,
+          country: shippingInfo.country === "us" ? "United States" : 
+                   shippingInfo.country === "ca" ? "Canada" :
+                   shippingInfo.country === "uk" ? "United Kingdom" :
+                   shippingInfo.country === "au" ? "Australia" : shippingInfo.country,
+        };
+
+        // Prepare payment info
+        const paymentInfo = {
+          id: `pay_${Date.now()}`, // Simulated payment ID
+          status: "completed",
+        };
+
+        // Call backend API to create order
+        const response = await createOrder({
+          shippingAddress,
+          paymentMethod: "card",
+          paymentInfo,
+        });
+
+        if (response.success && response.data) {
+          // Clear cart and redirect to success page with order ID
+          clearCart();
+          router.push(`/checkout/success?orderId=${response.data._id}`);
+        } else {
+          // Show error message
+          alert(response.message || "Failed to create order. Please try again.");
+          setIsProcessing(false);
+        }
+      } catch (error) {
+        console.error("Error creating order:", error);
+        alert("An error occurred while processing your order. Please try again.");
+        setIsProcessing(false);
+      }
     }
   };
 

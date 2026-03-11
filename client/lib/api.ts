@@ -814,3 +814,188 @@ export async function clearCart(): Promise<ApiResponse<CartData>> {
   }
 }
 
+// ==================== ORDER API FUNCTIONS ====================
+
+// Backend order interface
+interface BackendOrder {
+  _id: string;
+  user: string;
+  orderItems: {
+    product: string | BackendProduct;
+    name: string;
+    price: number;
+    quantity: number;
+    image: string;
+  }[];
+  shippingAddress: {
+    street: string;
+    city: string;
+    state: string;
+    zipCode: string;
+    country: string;
+  };
+  paymentMethod: string;
+  paymentInfo: {
+    id: string;
+    status: string;
+  };
+  totalPrice: number;
+  shippingCost?: number;
+  tax?: number;
+  orderStatus: string;
+  deliveredAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Shipping address interface
+interface ShippingAddress {
+  street: string;
+  city: string;
+  state: string;
+  zipCode: string;
+  country: string;
+}
+
+// Payment info interface
+interface PaymentInfo {
+  id: string;
+  status: string;
+}
+
+// Create order data interface
+interface CreateOrderData {
+  shippingAddress: ShippingAddress;
+  paymentMethod: string;
+  paymentInfo?: PaymentInfo;
+}
+
+/**
+ * Create a new order
+ */
+export async function createOrder(orderData: CreateOrderData): Promise<ApiResponse<BackendOrder>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to create an order",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/orders`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(orderData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to create order",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error creating order:", error);
+    return {
+      success: false,
+      message: "An error occurred while creating the order",
+    };
+  }
+}
+
+/**
+ * Get user's orders
+ */
+export async function getOrders(page: number = 1, limit: number = 10): Promise<ApiResponse<any>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to view orders",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/orders?page=${page}&limit=${limit}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to fetch orders",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching orders",
+    };
+  }
+}
+
+/**
+ * Get order by ID
+ */
+export async function getOrderById(orderId: string): Promise<ApiResponse<BackendOrder>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to view order details",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/orders/${orderId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to fetch order",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data,
+    };
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching the order",
+    };
+  }
+}
+
