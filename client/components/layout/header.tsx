@@ -13,7 +13,7 @@ import { AuthDialog } from "@/components/auth/auth-dialog";
 const navigation = [
   { name: "Home", href: "/" },
   { name: "Collections", href: "/products" },
-  { name: "About", href: "#" },
+  { name: "About", href: "/about" },
 ];
 
 export function Header() {
