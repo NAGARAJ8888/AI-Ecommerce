@@ -488,6 +488,106 @@ export async function getFeaturedProducts(): Promise<ApiResponse<Product[]>> {
   }
 }
 
+// ==================== USER API FUNCTIONS ====================
+
+interface UpdateUserProfileData {
+  name?: string;
+  phone?: string;
+}
+
+interface UpdatePasswordData {
+  currentPassword: string;
+  newPassword: string;
+}
+
+export async function updateUserProfile(
+  userData: UpdateUserProfileData
+): Promise<ApiResponse<any>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to update your profile",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/users/profile`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(userData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to update profile",
+      };
+    }
+
+    return {
+      success: true,
+      data: data.data || data.user,
+    };
+  } catch (error) {
+    console.error("Error updating profile:", error);
+    return {
+      success: false,
+      message: "An error occurred while updating the profile",
+    };
+  }
+}
+
+export async function updatePassword(
+  passwordData: UpdatePasswordData
+): Promise<ApiResponse<any>> {
+  try {
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      return {
+        success: false,
+        message: "You must be logged in to update your password",
+      };
+    }
+
+    const response = await fetch(`${API_URL}/users/password`, {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(passwordData),
+    });
+
+    const data = await response.json();
+
+    if (!response.ok) {
+      return {
+        success: false,
+        message: data.message || "Failed to update password",
+      };
+    }
+
+    return {
+      success: true,
+      message: data.message || "Password updated successfully",
+    };
+  } catch (error) {
+    console.error("Error updating password:", error);
+    return {
+      success: false,
+      message: "An error occurred while updating the password",
+    };
+  }
+}
+
 // ==================== CART API FUNCTIONS ====================
 
 // Backend cart item interface (raw data from API)

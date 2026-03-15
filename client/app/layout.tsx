@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/lib/cart-context'
 import { AuthProvider } from '@/lib/auth-context'
+import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
 const _geist = Geist({ subsets: ["latin"] });
@@ -42,6 +43,7 @@ export default function RootLayout({
         <AuthProvider>
           <CartProvider>
             {children}
+            <Toaster position="top-center" richColors />
           </CartProvider>
         </AuthProvider>
         <Analytics />

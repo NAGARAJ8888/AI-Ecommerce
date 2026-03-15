@@ -17,6 +17,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string, phone?: string) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -123,8 +124,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [token, API_URL]);
 
+  const updateUserInfo = useCallback((userData: Partial<User>) => {
+    setUser((prev) => {
+      if (!prev) return null;
+      const updatedUser = { ...prev, ...userData };
+      localStorage.setItem("user", JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateUser: updateUserInfo }}>
       {children}
     </AuthContext.Provider>
   );
