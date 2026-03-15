@@ -9,6 +9,7 @@ import { Footer } from "@/components/layout/footer";
 import { ProductCard } from "@/components/product/product-card";
 import { getProductById as getProductByIdApi, transformProduct } from "@/lib/api";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -44,6 +45,7 @@ export default function ProductDetailPage() {
   const [relatedProducts, setRelatedProducts] = useState<ProductData[]>([]);
 
   const { addItem } = useCart();
+  const { user } = useAuth();
   const [selectedSize, setSelectedSize] = useState<string | undefined>();
   const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [quantity, setQuantity] = useState(1);
@@ -116,6 +118,10 @@ export default function ProductDetailPage() {
   const images = product.images?.length > 0 ? product.images : [product.image];
 
   const handleAddToCart = () => {
+    if (!user) {
+      window.dispatchEvent(new CustomEvent("open-auth-dialog"));
+      return;
+    }
     // Map to the Product type expected by cart context
     const cartProduct = {
       id: product.id,

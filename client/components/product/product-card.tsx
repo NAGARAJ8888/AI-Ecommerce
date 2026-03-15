@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { ShoppingBag } from "lucide-react";
 
@@ -33,6 +34,7 @@ interface ProductCardProps {
 
 export function ProductCard({ product }: ProductCardProps) {
   const { addItem } = useCart();
+  const { user } = useAuth();
 
   return (
     <div className="group relative">
@@ -74,6 +76,10 @@ export function ProductCard({ product }: ProductCardProps) {
         className="absolute bottom-20 right-3 opacity-0 group-hover:opacity-100 transition-opacity  mb-2 cursor-pointer"
         onClick={(e) => {
           e.preventDefault();
+          if (!user) {
+            window.dispatchEvent(new CustomEvent("open-auth-dialog"));
+            return;
+          }
           addItem(product);
         }}
       >

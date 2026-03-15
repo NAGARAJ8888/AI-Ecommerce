@@ -5,11 +5,13 @@ import Link from "next/link";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { useCart } from "@/lib/cart-context";
+import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Minus, Plus, X, ShoppingBag, ArrowRight } from "lucide-react";
 
 export default function CartPage() {
   const { items, removeItem, updateQuantity, totalPrice, clearCart } = useCart();
+  const { user } = useAuth();
 
   const shipping = totalPrice > 200 ? 0 : 15;
   const total = totalPrice + shipping;
@@ -185,12 +187,29 @@ export default function CartPage() {
                     </div>
                   </div>
 
-                  <Link href="/checkout" className="block mt-6">
-                    <Button className="w-full tracking-wide">
-                      CHECKOUT
-                      <ArrowRight className="ml-2 h-4 w-4" />
+                  <div className="mt-6">
+                    <Button 
+                      className="w-full tracking-wide"
+                      asChild={!!user}
+                      onClick={(e) => {
+                        if (!user) {
+                          window.dispatchEvent(new CustomEvent("open-auth-dialog"));
+                        }
+                      }}
+                    >
+                      {user ? (
+                        <Link href="/checkout">
+                          CHECKOUT
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                      ) : (
+                        <>
+                          CHECKOUT
+                          <ArrowRight className="ml-2 h-4 w-4" />
+                        </>
+                      )}
                     </Button>
-                  </Link>
+                  </div>
 
                   <div className="mt-6 text-center">
                     <p className="text-xs text-muted-foreground">

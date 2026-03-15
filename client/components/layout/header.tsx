@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
@@ -23,6 +23,12 @@ export function Header() {
   const [searchQuery, setSearchQuery] = useState("");
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const router = useRouter();
+
+  useEffect(() => {
+    const handleOpenAuth = () => setIsAuthDialogOpen(true);
+    window.addEventListener("open-auth-dialog", handleOpenAuth);
+    return () => window.removeEventListener("open-auth-dialog", handleOpenAuth);
+  }, []);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -130,17 +136,27 @@ export function Header() {
             </Button>
           )}
 
-          <Link href="/cart">
-            <Button variant="ghost" size="icon" className="relative">
-              <ShoppingBag className="h-5 w-5" />
-              {totalItems > 0 && (
-                <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
-                  {totalItems}
-                </span>
-              )}
-              <span className="sr-only">Cart</span>
-            </Button>
-          </Link>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative"
+            onClick={(e) => {
+              if (!user) {
+                e.preventDefault();
+                setIsAuthDialogOpen(true);
+              } else {
+                router.push("/cart");
+              }
+            }}
+          >
+            <ShoppingBag className="h-5 w-5" />
+            {totalItems > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                {totalItems}
+              </span>
+            )}
+            <span className="sr-only">Cart</span>
+          </Button>
 
           {user ? (
             <div className="flex items-center gap-2">

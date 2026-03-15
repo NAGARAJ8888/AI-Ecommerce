@@ -33,12 +33,42 @@ interface Product {
 
 const categories = [
   { name: "All", slug: "all" },
-  { name: "Clothing", slug: "all" },
-  { name: "Shoes", slug: "shoes" },
-  { name: "Accessories", slug: "accessories" },
-  { name: "Bags", slug: "bags" },
-  { name: "Jewelry", slug: "jewelry" },
-  { name: "Watches", slug: "watches" },
+  {
+    name: "Clothing",
+    slug: "clothing",
+    image:
+      "https://images.pexels.com/photos/7671163/pexels-photo-7671163.jpeg?auto=compress&cs=tinysrgb&w=800",
+  },
+  {
+    name: "Shoes",
+    slug: "shoes",
+    image:
+      "https://images.pexels.com/photos/2547007/pexels-photo-2547007.jpeg?auto=compress&cs=tinysrgb&w=800",
+  },
+  {
+    name: "Accessories",
+    slug: "accessories",
+    image:
+      "https://images.pexels.com/photos/3850540/pexels-photo-3850540.jpeg?auto=compress&cs=tinysrgb&w=800",
+  },
+  {
+    name: "Bags",
+    slug: "bags",
+    image:
+      "https://images.pexels.com/photos/9327162/pexels-photo-9327162.jpeg?auto=compress&cs=tinysrgb&w=800",
+  },
+  {
+    name: "Jewelry",
+    slug: "jewelry",
+    image:
+      "https://images.pexels.com/photos/31730435/pexels-photo-31730435.jpeg?auto=compress&cs=tinysrgb&w=800",
+  },
+  {
+    name: "Watches",
+    slug: "watches",
+    image:
+      "https://images.pexels.com/photos/5827771/pexels-photo-5827771.jpeg?auto=compress&cs=tinysrgb&w=800",
+  },
 ];
 
 export default function HomePage() {
@@ -122,11 +152,19 @@ export default function HomePage() {
                 <Link
                   key={category.slug}
                   href={`/products?category=${category.slug}`}
-                  className="group relative aspect-square bg-secondary overflow-hidden"
+                  className="group relative aspect-square bg-secondary overflow-hidden rounded-sm"
                 >
-                  <div className="absolute inset-0 bg-foreground/5 group-hover:bg-foreground/10 transition-colors" />
+                  {category.image && (
+                    <Image
+                      src={category.image}
+                      alt={category.name}
+                      fill
+                      className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-black/40 group-hover:bg-black/50 transition-colors" />
                   <div className="absolute inset-0 flex items-center justify-center">
-                    <span className="text-sm font-medium tracking-wide group-hover:underline">
+                    <span className="text-sm font-medium tracking-widest text-white uppercase group-hover:scale-110 transition-transform">
                       {category.name}
                     </span>
                   </div>
