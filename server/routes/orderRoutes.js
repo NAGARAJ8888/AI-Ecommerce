@@ -128,6 +128,7 @@ const router = express.Router();
 
 // Protected routes
 router.post("/", protect, createOrder);
+router.get("/", protect, getMyOrders);
 router.get("/my-orders", protect, getMyOrders);
 router.get("/my-orders/stats", protect, getMyOrderStats);
 router.get("/:id", protect, getOrderById);

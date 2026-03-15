@@ -12,7 +12,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format } from "date-fns";
-import { Package, Eye } from "lucide-react";
+import { Package } from "lucide-react";
+import { OrderDetailsDialog } from "./order-details-dialog";
 
 interface Order {
   _id: string;
@@ -89,9 +90,11 @@ export function OrderHistory({ orders, isLoading }: OrderHistoryProps) {
                 ${order.totalPrice.toFixed(2)}
               </TableCell>
               <TableCell className="text-right">
-                <Button variant="ghost" size="icon">
-                  <Eye className="h-4 w-4" />
-                </Button>
+                <OrderDetailsDialog 
+                  orderId={order._id} 
+                  orderStatus={order.orderStatus} 
+                  statusColor={getStatusColor(order.orderStatus)} 
+                />
               </TableCell>
             </TableRow>
           ))}

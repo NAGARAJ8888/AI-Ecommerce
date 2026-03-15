@@ -34,7 +34,10 @@ export default function ProfilePage() {
     try {
       const response = await getOrders();
       if (response.success) {
-        setOrders(response.data || []);
+        // The API response might have the list in response.data.data (paginated) or just response.data
+        const orderData = response.data;
+        const orderList = Array.isArray(orderData) ? orderData : (orderData?.data || []);
+        setOrders(orderList);
       }
     } catch (error) {
       console.error("Error fetching orders:", error);

@@ -1029,7 +1029,7 @@ export async function getOrders(page: number = 1, limit: number = 10): Promise<A
       };
     }
 
-    const response = await fetch(`${API_URL}/orders?page=${page}&limit=${limit}`, {
+    const response = await fetch(`${API_URL}/orders/my-orders?page=${page}&limit=${limit}`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },

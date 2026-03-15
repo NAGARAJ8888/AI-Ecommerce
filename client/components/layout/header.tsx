@@ -10,7 +10,7 @@ import { Menu, ShoppingBag, Search, X, User, LogOut } from "lucide-react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 
 const navigation = [
-  { name: "Shop", href: "/products" },
+  { name: "Home", href: "/" },
   { name: "Collections", href: "/products" },
   { name: "About", href: "#" },
 ];
