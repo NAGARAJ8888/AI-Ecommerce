@@ -1,6 +1,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { useRouter, usePathname } from "next/navigation";
 
 interface User {
   id: string;
@@ -28,6 +29,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
   // Load auth state from localStorage on mount
   useEffect(() => {
@@ -62,6 +65,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: data.data._id,
       name: data.data.name,
       email: data.data.email,
+      phone: data.data.phone,
       isAdmin: data.data.role === "admin",
     };
     
@@ -92,6 +96,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       id: data.data._id,
       name: data.data.name,
       email: data.data.email,
+      phone: data.data.phone,
       isAdmin: data.data.role === "admin",
     };
     
@@ -121,8 +126,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setToken(null);
       localStorage.removeItem("token");
       localStorage.removeItem("user");
+
+      // Redirect if current page requires auth
+      const protectedRoutes = ["/profile", "/checkout", "/admin"];
+      const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
+      
+      if (isProtectedRoute) {
+        router.push("/");
+      }
     }
-  }, [token, API_URL]);
+  }, [token, API_URL, router, pathname]);
 
   const updateUserInfo = useCallback((userData: Partial<User>) => {
     setUser((prev) => {

@@ -27,6 +27,16 @@ export function PersonalDetails({ user }: PersonalDetailsProps) {
     phone: user?.phone || "",
   });
 
+  // Sync state if user data changes (e.g., after initial fetch)
+  React.useEffect(() => {
+    if (user) {
+      setFormData({
+        name: user.name || "",
+        phone: user.phone || "",
+      });
+    }
+  }, [user]);
+
   if (!user) return null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {

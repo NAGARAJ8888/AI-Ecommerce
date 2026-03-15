@@ -38,6 +38,7 @@ export const registerUser = asyncHandler(async (req, res, next) => {
         _id: user._id,
         name: user.name,
         email: user.email,
+        phone: user.phone,
         role: user.role,
         avatar: user.avatar,
         token: generateToken(user._id)
@@ -81,6 +82,7 @@ export const loginUser = asyncHandler(async (req, res, next) => {
       _id: user._id,
       name: user.name,
       email: user.email,
+      phone: user.phone,
       role: user.role,
       avatar: user.avatar,
       wishlist: user.wishlist,
@@ -146,6 +148,7 @@ export const updateUserProfile = asyncHandler(async (req, res, next) => {
       _id: updatedUser._id,
       name: updatedUser.name,
       email: updatedUser.email,
+      phone: updatedUser.phone,
       role: updatedUser.role,
       avatar: updatedUser.avatar,
       token: generateToken(updatedUser._id)
