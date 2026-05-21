@@ -18,3 +18,6 @@
 {"level":"error","message":"500 - Product validation failed: category: Cast to ObjectId failed for value \"blazers\" (type string) at path \"category\" because of \"BSONError\" - /api/products - POST - ::1","timestamp":"2026-03-11T13:03:39.159Z"}
 {"level":"error","message":"500 - Failed to upload image - /api/products - POST - ::1","timestamp":"2026-03-11T13:21:34.466Z"}
 {"level":"error","message":"500 - Product validation failed: category: Cast to ObjectId failed for value \"blazers\" (type string) at path \"category\" because of \"BSONError\" - /api/products - POST - ::1","timestamp":"2026-03-11T13:25:22.995Z"}
+{"level":"error","message":"401 - Invalid credentials - /api/users/login - POST - ::1","timestamp":"2026-05-21T07:21:01.073Z"}
+{"level":"error","message":"401 - Invalid credentials - /api/users/login - POST - ::1","timestamp":"2026-05-21T07:21:08.830Z"}
+{"level":"error","message":"400 - User already exists - /api/users/register - POST - ::1","timestamp":"2026-05-21T07:21:49.655Z"}

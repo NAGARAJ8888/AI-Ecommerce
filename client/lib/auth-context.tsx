@@ -32,21 +32,49 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
 
-  // Load auth state from localStorage on mount
+  // Load auth state from server via cookie session
   useEffect(() => {
-    const storedToken = localStorage.getItem("token");
-    const storedUser = localStorage.getItem("user");
+    let cancelled = false;
 
-    if (storedToken && storedUser && storedUser !== "undefined") {
-      setToken(storedToken);
-      setUser(JSON.parse(storedUser));
-    }
-    setIsLoading(false);
-  }, []);
+    const init = async () => {
+      try {
+        const res = await fetch(`${API_URL}/users/me`, {
+          method: "GET",
+          credentials: "include",
+        });
+
+        if (!res.ok) return;
+        const data = await res.json();
+        if (cancelled) return;
+
+        const u = data?.data;
+        if (u) {
+          setUser({
+            id: u._id,
+            name: u.name,
+            email: u.email,
+            phone: u.phone,
+            isAdmin: u.role === "admin",
+          });
+        }
+      } catch {
+        // silent
+      } finally {
+        if (!cancelled) setIsLoading(false);
+      }
+    };
+
+    init();
+    return () => {
+      cancelled = true;
+    };
+  }, [API_URL]);
+
 
   const login = useCallback(async (email: string, password: string) => {
     const response = await fetch(`${API_URL}/users/login`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -59,8 +87,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.message || "Login failed");
     }
 
-    // Server returns { success: true, data: { user, token } }
-    const { token: newToken } = data.data;
     const userData = {
       id: data.data._id,
       name: data.data.name,
@@ -68,16 +94,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       phone: data.data.phone,
       isAdmin: data.data.role === "admin",
     };
-    
-    setToken(newToken);
+
     setUser(userData);
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(userData));
-  }, []);
+  }, [API_URL]);
+
 
   const register = useCallback(async (name: string, email: string, password: string, phone?: string) => {
     const response = await fetch(`${API_URL}/users/register`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
       },
@@ -90,8 +115,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.message || "Registration failed");
     }
 
-    // Server returns { success: true, data: { user, token } }
-    const { token: newToken } = data.data;
     const userData = {
       id: data.data._id,
       name: data.data.name,
@@ -99,52 +122,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       phone: data.data.phone,
       isAdmin: data.data.role === "admin",
     };
-    
-    setToken(newToken);
+
     setUser(userData);
-    localStorage.setItem("token", newToken);
-    localStorage.setItem("user", JSON.stringify(userData));
-  }, []);
+  }, [API_URL]);
+
 
   const logout = useCallback(async () => {
     try {
-      // Call server logout endpoint
-      if (token) {
-        await fetch(`${API_URL}/users/logout`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-        });
-      }
+      await fetch(`${API_URL}/users/logout`, {
+        method: "POST",
+        credentials: "include",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
     } catch (error) {
       console.error("Logout error:", error);
     } finally {
-      // Always clear local state regardless of server response
       setUser(null);
       setToken(null);
-      localStorage.removeItem("token");
-      localStorage.removeItem("user");
 
-      // Redirect if current page requires auth
       const protectedRoutes = ["/profile", "/checkout", "/admin"];
       const isProtectedRoute = protectedRoutes.some(route => pathname.startsWith(route));
-      
       if (isProtectedRoute) {
         router.push("/");
       }
     }
-  }, [token, API_URL, router, pathname]);
+  }, [API_URL, router, pathname]);
+
 
   const updateUserInfo = useCallback((userData: Partial<User>) => {
     setUser((prev) => {
       if (!prev) return null;
-      const updatedUser = { ...prev, ...userData };
-      localStorage.setItem("user", JSON.stringify(updatedUser));
-      return updatedUser;
+      return { ...prev, ...userData };
     });
   }, []);
+
 
   return (
     <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, updateUser: updateUserInfo }}>

@@ -1,18 +1,32 @@
 import User from "../models/user.js";
 import { asyncHandler, AppError } from "../middleware/errorMiddleware.js";
-import { generateToken } from "../middleware/authMiddleware.js";
 import bcrypt from "bcryptjs";
 import dotenv from "dotenv";
+import { generateToken } from "../middleware/authMiddleware.js";
+import crypto from "crypto";
+import {
+  generateSecureToken,
+  issueRefreshTokenForUser,
+  hashRefreshToken,
+  revokeFamilyTokens,
+  rotateRefreshToken
+} from "../services/auth/refreshTokenService.js";
+import { getCookieOptions } from "../utils/cookieOptions.js";
+
+
 
 dotenv.config();
 
+
 /**
  * @desc    Register new user
+
  * @route   POST /api/users/register
  * @access  Public
  */
 export const registerUser = asyncHandler(async (req, res, next) => {
   const { name, email, password } = req.body;
+
 
   // Check if user exists
   const userExists = await User.findOne({ email });
@@ -73,8 +87,56 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   user.lastLogin = new Date();
   await user.save({ validateBeforeSave: false });
 
-  // Generate token
-  const token = generateToken(user._id);
+  // Issue access + refresh tokens
+  const accessToken = generateToken(user._id);
+
+  // Refresh token rotation family id
+  const familyId = crypto.randomUUID();
+  const refreshToken = generateSecureToken(64);
+
+  // Refresh token expires more slowly
+  const refreshMaxAgeMs = parseInt(process.env.REFRESH_TOKEN_MAX_AGE_MS, 10) || 1000 * 60 * 60 * 24 * 30; // 30d
+  const refreshExpiresAt = new Date(Date.now() + refreshMaxAgeMs);
+
+  await issueRefreshTokenForUser({
+    userId: user._id,
+    familyId,
+    refreshToken,
+    expiresAt: refreshExpiresAt
+  });
+
+  const { httpOnly, secure, sameSite, path, domain } = getCookieOptions({
+    req,
+    type: 'refresh',
+    maxAgeMs: refreshMaxAgeMs
+  });
+
+  res.cookie('refresh_token', refreshToken, {
+    httpOnly,
+    secure,
+    sameSite,
+    path: '/api/users',
+    maxAge: refreshMaxAgeMs,
+    ...(domain ? { domain } : {})
+  });
+
+  res.cookie('access_token', accessToken, {
+    httpOnly: true,
+    secure,
+    sameSite,
+    path: '/api',
+    maxAge: 1000 * 60 * 10
+  });
+
+  // CSRF: set XSRF-TOKEN readable cookie with random value
+  const csrfToken = generateSecureToken(32);
+  res.cookie('XSRF-TOKEN', csrfToken, {
+    httpOnly: false,
+    secure,
+    sameSite,
+    path: '/api/users',
+    maxAge: refreshMaxAgeMs
+  });
 
   res.json({
     success: true,
@@ -86,10 +148,10 @@ export const loginUser = asyncHandler(async (req, res, next) => {
       role: user.role,
       avatar: user.avatar,
       wishlist: user.wishlist,
-      addresses: user.addresses,
-      token
+      addresses: user.addresses
     }
   });
+
 });
 
 /**
@@ -494,6 +556,13 @@ export const updateUserPassword = updatePassword;
  * @access  Private
  */
 export const logoutUser = asyncHandler(async (req, res, next) => {
+  // Best-effort: clear cookies.
+  // Proper revocation requires refresh-token rotation lookup by token hash;
+  // wire it once /api/users/refresh is fully integrated.
+  res.clearCookie('refresh_token', { path: '/api/users' });
+  res.clearCookie('access_token', { path: '/api' });
+  res.clearCookie('XSRF-TOKEN', { path: '/api/users' });
+
   res.json({
     success: true,
     message: "User logged out successfully"

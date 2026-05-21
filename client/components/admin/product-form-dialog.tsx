@@ -196,24 +196,9 @@ export function ProductFormDialog({
     setError(null);
 
     try {
-      // Check if user is logged in
-      const token = localStorage.getItem("token");
-      const userStr = localStorage.getItem("user");
-      
-      if (!token) {
-        setError("You are not logged in. Please login first.");
-        setIsSubmitting(false);
-        return;
-      }
-      
-      if (userStr) {
-        const user = JSON.parse(userStr);
-        if (!user.isAdmin) {
-          setError("You don't have admin privileges. Please login as an admin.");
-          setIsSubmitting(false);
-          return;
-        }
-      }
+      // Authorization is enforced server-side via HttpOnly cookies.
+      // Keep client UX minimal and avoid reading tokens from localStorage.
+
 
       let result;
       if (isEditMode && product) {

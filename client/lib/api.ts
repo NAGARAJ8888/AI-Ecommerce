@@ -1,5 +1,8 @@
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 
+import { fetchWithAuth } from "./auth/fetchWithAuth";
+
+
 interface ProductImage {
   url: string;
   public_id: string;
@@ -98,23 +101,12 @@ export async function createProduct(
       });
     }
 
-    // Get token from localStorage
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to create a product",
-      };
-    }
-
     const response = await fetch(`${API_URL}/products`, {
       method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
       body: formData,
     });
+
 
     const data = await response.json();
 
@@ -219,23 +211,12 @@ export async function updateProduct(
       });
     }
 
-    // Get token from localStorage
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to update a product",
-      };
-    }
-
     const response = await fetch(`${API_URL}/products/${productId}`, {
       method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
       body: formData,
     });
+
 
     const data = await response.json();
 
@@ -263,22 +244,11 @@ export async function deleteProduct(
   productId: string
 ): Promise<ApiResponse<any>> {
   try {
-    // Get token from localStorage
-    const token = localStorage.getItem("token");
-    
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to delete a product",
-      };
-    }
-
     const response = await fetch(`${API_URL}/products/${productId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     });
+
 
     const data = await response.json();
 
@@ -504,23 +474,15 @@ export async function updateUserProfile(
   userData: UpdateUserProfileData
 ): Promise<ApiResponse<any>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to update your profile",
-      };
-    }
-
     const response = await fetch(`${API_URL}/users/profile`, {
       method: "PUT",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(userData),
     });
+
 
     const data = await response.json();
 
@@ -548,23 +510,16 @@ export async function updatePassword(
   passwordData: UpdatePasswordData
 ): Promise<ApiResponse<any>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to update your password",
-      };
-    }
-
     const response = await fetch(`${API_URL}/users/password`, {
       method: "PUT",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(passwordData),
     });
+
+
 
     const data = await response.json();
 
@@ -693,20 +648,10 @@ export function transformCart(cartData: CartData) {
  */
 export async function getCart(): Promise<ApiResponse<CartData>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to view cart",
-      };
-    }
-
     const response = await fetch(`${API_URL}/cart`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     });
+
 
     const data = await response.json();
 
@@ -738,23 +683,15 @@ export async function addToCart(
   quantity: number = 1
 ): Promise<ApiResponse<CartData>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to add items to cart",
-      };
-    }
-
     const response = await fetch(`${API_URL}/cart`, {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ productId, quantity }),
     });
+
 
     const data = await response.json();
 
@@ -786,23 +723,15 @@ export async function updateCartItem(
   quantity: number
 ): Promise<ApiResponse<CartData>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to update cart",
-      };
-    }
-
     const response = await fetch(`${API_URL}/cart/${productId}`, {
       method: "PUT",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ quantity }),
     });
+
 
     const data = await response.json();
 
@@ -833,21 +762,11 @@ export async function removeFromCart(
   productId: string
 ): Promise<ApiResponse<CartData>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to remove items from cart",
-      };
-    }
-
     const response = await fetch(`${API_URL}/cart/${productId}`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     });
+
 
     const data = await response.json();
 
@@ -876,21 +795,11 @@ export async function removeFromCart(
  */
 export async function clearCart(): Promise<ApiResponse<CartData>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to clear cart",
-      };
-    }
-
     const response = await fetch(`${API_URL}/cart`, {
       method: "DELETE",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     });
+
 
     const data = await response.json();
 
@@ -973,38 +882,31 @@ interface CreateOrderData {
 /**
  * Create a new order
  */
-export async function createOrder(orderData: CreateOrderData): Promise<ApiResponse<BackendOrder>> {
+export async function createOrder(
+  orderData: CreateOrderData
+): Promise<ApiResponse<BackendOrder>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to create an order",
-      };
-    }
-
-    const response = await fetch(`${API_URL}/orders`, {
+    // Use the auth-aware wrapper so we can silently refresh access_token
+    // if it expired (otherwise server returns 401 missing access_token).
+    const response = await fetchWithAuth<BackendOrder>("/orders", {
       method: "POST",
+      credentials: "include",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify(orderData),
     });
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to create order",
+        message: response.message || "Failed to create order",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error creating order:", error);
@@ -1015,25 +917,16 @@ export async function createOrder(orderData: CreateOrderData): Promise<ApiRespon
   }
 }
 
+
 /**
  * Get user's orders
  */
 export async function getOrders(page: number = 1, limit: number = 10): Promise<ApiResponse<any>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to view orders",
-      };
-    }
-
     const response = await fetch(`${API_URL}/orders/my-orders?page=${page}&limit=${limit}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     });
+
 
     const data = await response.json();
 
@@ -1062,20 +955,10 @@ export async function getOrders(page: number = 1, limit: number = 10): Promise<A
  */
 export async function getOrderById(orderId: string): Promise<ApiResponse<BackendOrder>> {
   try {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      return {
-        success: false,
-        message: "You must be logged in to view order details",
-      };
-    }
-
     const response = await fetch(`${API_URL}/orders/${orderId}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
+      credentials: "include",
     });
+
 
     const data = await response.json();
 

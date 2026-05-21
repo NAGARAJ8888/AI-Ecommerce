@@ -204,21 +204,29 @@ const router = express.Router();
  *               $ref: '#/components/schemas/Error'
  */
 
+import { refreshAuth, logoutAuth, me } from "../controllers/authController.js";
+import { requireCsrf } from "../middleware/auth/requireCsrf.js";
+
 // Public routes
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
-// Protected routes
+// Cookie-based auth endpoints
+router.post("/refresh", requireCsrf, refreshAuth);
+router.get("/me", protect, me);
+
+// Protected routes (CSRF-protected for unsafe methods)
 router.get("/profile", protect, getUserProfile);
-router.put("/profile", protect, updateUserProfile);
-router.put("/password", protect, updateUserPassword);
-router.post("/addresses", protect, addAddress);
-router.delete("/addresses/:addressId", protect, removeAddress);
-router.post("/wishlist/:productId", protect, addToWishlist);
-router.delete("/wishlist/:productId", protect, removeFromWishlist);
-router.post("/track", protect, trackBrowsingHistory);
+router.put("/profile", protect, requireCsrf, updateUserProfile);
+router.put("/password", protect, requireCsrf, updateUserPassword);
+router.post("/addresses", protect, requireCsrf, addAddress);
+router.delete("/addresses/:addressId", protect, requireCsrf, removeAddress);
+router.post("/wishlist/:productId", protect, requireCsrf, addToWishlist);
+router.delete("/wishlist/:productId", protect, requireCsrf, removeFromWishlist);
+router.post("/track", protect, requireCsrf, trackBrowsingHistory);
 router.get("/history", protect, getBrowsingHistory);
-router.post("/logout", protect, logoutUser);
+router.post("/logout", requireCsrf, logoutAuth);
+
 
 // Admin routes
 router.get("/", protect, admin, getAllUsers);
