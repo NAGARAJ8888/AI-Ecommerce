@@ -23,8 +23,17 @@ function requestInterceptor(init: RequestInit = {}): RequestInit {
 
   // Double-submit CSRF: token must come from readable cookie
   if (isUnsafeMethod(init.method)) {
+    const all = typeof document !== "undefined" ? document.cookie : "";
     const csrf = getCookie("XSRF-TOKEN");
-    headers.set("X-CSRF-Token", csrf || "");
+
+    // Temporary client-side diagnostics (remove after fix)
+    console.log("CSRF CLIENT DEBUG: document.cookie contains XSRF-TOKEN=", all.includes("XSRF-TOKEN="));
+    console.log("CSRF CLIENT DEBUG: extracted csrf length=", csrf ? csrf.length : 0);
+    console.log("CSRF CLIENT DEBUG: extracted csrf=", csrf);
+
+    if (csrf) {
+      headers.set("X-CSRF-Token", csrf);
+    }
   }
 
   return {
@@ -33,6 +42,7 @@ function requestInterceptor(init: RequestInit = {}): RequestInit {
     headers
   };
 }
+
 
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<ApiResponse<T>> {
@@ -114,6 +124,7 @@ export async function fetchWithAuth<T>(
     if (!ok) return resp;
     return attempt();
   }
+
 
   return resp;
 }

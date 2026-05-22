@@ -1,12 +1,29 @@
 export function getCookie(name: string): string | null {
   if (typeof document === "undefined") return null;
 
-  const match = document.cookie.match(
-    new RegExp("(^|;\\s*)" + name + "=([^;]*)")
-  );
+  // document.cookie is a semicolon-separated list.
+  // Use a strict parse to avoid regex edge-cases with special characters.
+  const cookies = document.cookie ? document.cookie.split(";") : [];
+  for (const raw of cookies) {
+    const part = raw.trim();
+    if (!part) continue;
+    const eq = part.indexOf("=");
+    if (eq === -1) continue;
 
-  return match ? decodeURIComponent(match[2]) : null;
+    const cookieName = part.slice(0, eq);
+    if (cookieName !== name) continue;
+
+    const cookieValue = part.slice(eq + 1);
+    try {
+      return decodeURIComponent(cookieValue);
+    } catch {
+      return cookieValue;
+    }
+  }
+
+  return null;
 }
+
 
 type SetCookieOptions = {
   path?: string;
