@@ -5,6 +5,8 @@ import Activity from "../models/activity.js";
 import { asyncHandler, AppError } from "../middleware/errorMiddleware.js";
 import { logger } from "../utils/logger.js";
 import { getAIRecommendations, getPersonalizedRecommendations, getSimilarProducts } from "../services/recommendationService.js";
+import { recommendationQueueService } from "../queues/recommendationQueueService.js";
+
 
 /**
  * @desc    Get AI recommendations for user
@@ -28,10 +30,18 @@ export const getRecommendations = asyncHandler(async (req, res, next) => {
   const hoursSinceUpdate = (Date.now() - lastUpdated.getTime()) / (1000 * 60 * 60);
 
   if (hoursSinceUpdate > 24) {
-    // Refresh recommendations in background
-    setImmediate(async () => {
-      await generateRecommendations(userId, limit);
-    });
+    // STEP 5: Background job refresh (BullMQ) instead of setImmediate.
+    // Non-blocking: enqueue only; request response behavior is preserved.
+    try {
+      await recommendationQueueService.enqueueRefresh({
+        userId,
+        limit,
+        source: "recommendation.refresh" 
+      });
+    } catch (err) {
+      // Don't fail the request due to job enqueue issues.
+      logger.warn("Failed to enqueue recommendation refresh job", err);
+    }
   }
 
   // Populate product details

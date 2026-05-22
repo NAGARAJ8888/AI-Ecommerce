@@ -2,10 +2,43 @@ import Payment from "../models/payment.js";
 import Order from "../models/order.js";
 import { asyncHandler, AppError } from "../middleware/errorMiddleware.js";
 import { logger } from "../utils/logger.js";
-import { createStripePayment, verifyStripePayment } from "../services/paymentService.js";
-import { createRazorpayOrder, verifyRazorpayPayment } from "../services/paymentService.js";
+import { createStripePayment } from "../services/paymentService.js";
+import { verifyStripePayment } from "../services/paymentService.js";
+import { createRazorpayOrder } from "../services/paymentService.js";
+import { verifyRazorpayPayment } from "../services/paymentService.js";
+import {
+  verifyPaymentAndFinalize,
+  refundPaymentIdempotent
+} from "../services/paymentWorkflow/paymentWorkflowService.js";
+
+import { enqueuePaymentOrderReconciliation } from "../jobs/reconciliation/enqueuePaymentOrderReconciliation.js";
+
+function enqueueReconciliationBestEffort(payload) {
+  try {
+    // Do not block payment APIs.
+    return enqueuePaymentOrderReconciliation(payload).catch((e) => {
+      logger.warn("reconciliation_enqueue_failed", {
+        error: e?.message,
+        provider: payload?.context?.provider,
+        orderId: payload?.orderId,
+        paymentId: payload?.paymentId
+      });
+    });
+  } catch (e) {
+    logger.warn("reconciliation_enqueue_failed_sync", {
+      error: e?.message,
+      provider: payload?.context?.provider,
+      orderId: payload?.orderId,
+      paymentId: payload?.paymentId
+    });
+    return null;
+  }
+}
+
+
 
 /**
+
  * @desc    Create Stripe payment intent
  * @route   POST /api/payments/stripe/create-intent
  * @access  Private
@@ -45,39 +78,73 @@ export const createStripeIntent = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 export const verifyStripePaymentController = asyncHandler(async (req, res, next) => {
-  const { paymentIntentId, orderId } = req.body;
+  const { paymentIntentId, orderId, providerEventId, idempotencyKey } = req.body;
 
-  const order = await Order.findById(orderId);
-  
-  if (!order) {
-    throw new AppError("Order not found", 404);
+  try {
+    const createdPayment = await verifyPaymentAndFinalize({
+      provider: "stripe",
+      transactionId: paymentIntentId,
+      providerEventId,
+      idempotencyKey,
+      userId: req.user._id,
+      orderId,
+      amount: undefined,
+      changedBy: req.user._id
+    });
+
+    const order = await Order.findById(orderId);
+    req?.logger?.info?.("payment_verified", { provider: "stripe", orderId: order?._id, transactionId: paymentIntentId });
+
+
+    // STEP 9: best-effort reconciliation enqueue (non-blocking)
+    enqueueReconciliationBestEffort({
+      paymentId: paymentIntentId,
+      orderId,
+      provider: "stripe",
+      context: {
+        provider: "stripe",
+        transactionId: paymentIntentId
+      },
+      correlation: {
+        requestId: req?.headers?.["x-request-id"] || undefined
+      },
+      sourceWorkflow: "payment_verification"
+    });
+
+    // STEP 9: enqueue reconciliation best-effort (non-blocking)
+    enqueueReconciliationBestEffort({
+      paymentId: razorpayPaymentId,
+      orderId,
+      provider: "razorpay",
+      context: {
+        provider: "razorpay",
+        transactionId: razorpayPaymentId
+      },
+      correlation: {
+        requestId: req?.headers?.["x-request-id"] || undefined
+      },
+      sourceWorkflow: "payment_verification"
+    });
+
+    return res.json({
+      success: true,
+      message: "Payment verified successfully",
+      data: order
+    });
+
+  } catch (err) {
+
+    // STEP 4: idempotency-safe duplicate handling.
+    if (err?.details && (err?.statusCode === 200 || err?.statusCode === undefined)) {
+      const order = await Order.findById(orderId);
+      return res.json({
+        success: true,
+        message: "Payment already processed",
+        data: order
+      });
+    }
+    throw err;
   }
-
-  // Update order payment status
-  order.paymentInfo = {
-    id: paymentIntentId,
-    status: "paid"
-  };
-  
-  await order.save();
-
-  // Create payment record
-  await Payment.create({
-    user: req.user._id,
-    order: order._id,
-    amount: order.totalPrice,
-    provider: "stripe",
-    status: "completed",
-    transactionId: paymentIntentId
-  });
-
-  logger.info(`Stripe payment verified for order ${order._id}`);
-
-  res.json({
-    success: true,
-    message: "Payment verified successfully",
-    data: order
-  });
 });
 
 /**
@@ -120,15 +187,9 @@ export const createRazorpayOrderController = asyncHandler(async (req, res, next)
  * @access  Private
  */
 export const verifyRazorpayPaymentController = asyncHandler(async (req, res, next) => {
-  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId } = req.body;
+  const { razorpayOrderId, razorpayPaymentId, razorpaySignature, orderId, providerEventId, idempotencyKey } = req.body;
 
-  const order = await Order.findById(orderId);
-  
-  if (!order) {
-    throw new AppError("Order not found", 404);
-  }
-
-  // Verify Razorpay signature
+  // Verify Razorpay signature (correctness)
   const isValid = await verifyRazorpayPayment(
     razorpayOrderId,
     razorpayPaymentId,
@@ -139,31 +200,39 @@ export const verifyRazorpayPaymentController = asyncHandler(async (req, res, nex
     throw new AppError("Invalid payment signature", 400);
   }
 
-  // Update order payment status
-  order.paymentInfo = {
-    id: razorpayPaymentId,
-    status: "paid"
-  };
-  
-  await order.save();
+  try {
+    await verifyPaymentAndFinalize({
+      provider: "razorpay",
+      transactionId: razorpayPaymentId,
+      providerEventId,
+      idempotencyKey,
+      userId: req.user._id,
+      orderId,
+      amount: undefined,
+      changedBy: req.user._id
+    });
 
-  // Create payment record
-  await Payment.create({
-    user: req.user._id,
-    order: order._id,
-    amount: order.totalPrice,
-    provider: "razorpay",
-    status: "completed",
-    transactionId: razorpayPaymentId
-  });
+    const order = await Order.findById(orderId);
+    req?.logger?.info?.("payment_verified", { provider: "razorpay", orderId: order?._id, transactionId: razorpayPaymentId });
 
-  logger.info(`Razorpay payment verified for order ${order._id}`);
 
-  res.json({
-    success: true,
-    message: "Payment verified successfully",
-    data: order
-  });
+    return res.json({
+      success: true,
+      message: "Payment verified successfully",
+      data: order
+    });
+  } catch (err) {
+    // STEP 4: idempotency-safe duplicate handling.
+    if (err?.details && (err?.statusCode === 200 || err?.statusCode === undefined)) {
+      const order = await Order.findById(orderId);
+      return res.json({
+        success: true,
+        message: "Payment already processed",
+        data: order
+      });
+    }
+    throw err;
+  }
 });
 
 /**
@@ -320,29 +389,42 @@ export const processRefund = asyncHandler(async (req, res, next) => {
   }
 
   if (payment.status !== "completed") {
+    // STEP 4: refund idempotency.
+    if (payment.status === "refunded") {
+      return res.json({
+        success: true,
+        message: "Refund already processed",
+        data: payment
+      });
+    }
     throw new AppError("Can only refund completed payments", 400);
   }
 
-  // Process refund based on provider
-  // In production, this would call the payment provider's refund API
-  payment.status = "refunded";
-  await payment.save();
+  try {
+    const { refundId } = req.body || {};
+    const refunded = await refundPaymentIdempotent({
+      paymentId: payment._id,
+      provider: payment.provider,
+      refundId,
+      changedBy: req.user._id
+    });
 
-  // Update order status
-  await Order.findByIdAndUpdate(payment.order, {
-    orderStatus: "Cancelled",
-    paymentInfo: {
-      id: payment.transactionId,
-      status: "refunded"
+    logger.info(`Refund processed for payment ${payment._id}`);
+
+    return res.json({
+      success: true,
+      message: "Refund processed successfully",
+      data: refunded
+    });
+  } catch (err) {
+    if (err?.details && (err?.statusCode === 200 || err?.statusCode === undefined)) {
+      return res.json({
+        success: true,
+        message: "Refund already processed",
+        data: payment
+      });
     }
-  });
-
-  logger.info(`Refund processed for payment ${payment._id}`);
-
-  res.json({
-    success: true,
-    message: "Refund processed successfully",
-    data: payment
-  });
+    throw err;
+  }
 });
 

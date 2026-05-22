@@ -4,9 +4,19 @@ import Product from "../models/product.js";
 import Payment from "../models/payment.js";
 import { asyncHandler, AppError } from "../middleware/errorMiddleware.js";
 import { logger } from "../utils/logger.js";
+import {
+  applyOrderStatusTransition,
+  validateOrderStatusValue
+} from "../services/orderWorkflow/orderWorkflowService.js";
+import { reserveForOrder } from "../services/inventory/reservationService.js";
+import { InsufficientInventoryError } from "../services/inventory/inventoryErrors.js";
+
+
+
 
 /**
  * @desc    Create new order
+
  * @route   POST /api/orders
  * @access  Private
  */
@@ -21,12 +31,19 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     throw new AppError("Cart is empty", 400);
   }
 
-  // Validate stock for all items
-  for (const item of cart.items) {
-    if (item.product.stock < item.quantity) {
-      throw new AppError(`Insufficient stock for ${item.product.name}`, 400);
-    }
-  }
+  // STEP 3: reserve inventory atomically (prevents overselling/negative stock)
+  // Reserve via guarded decrement (stock >= quantity) through inventory service.
+  // This is the concurrency safety foundation.
+  const lineItems = cart.items.map((item) => ({
+    productId: item.product._id,
+    quantity: item.quantity
+  }));
+
+  await reserveForOrder({
+    orderId: null,
+    lineItems
+  });
+
 
   // Create order items
   const orderItems = cart.items.map((item) => ({
@@ -53,15 +70,20 @@ export const createOrder = asyncHandler(async (req, res, next) => {
     totalPrice: finalPrice,
     shippingCost,
     tax,
-    orderStatus: "Processing"
+    orderStatus: "Processing",
+    // STEP 1: initial audit entry (foundation)
+    statusHistory: [
+      {
+        status: "Processing",
+        changedAt: new Date(),
+        reason: "order_created",
+        changedBy: req.user._id
+      }
+    ]
   });
 
-  // Update product stock
-  for (const item of cart.items) {
-    await Product.findByIdAndUpdate(item.product._id, {
-      $inc: { stock: -item.quantity }
-    });
-  }
+
+
 
   // Clear cart after successful order
   cart.items = [];
@@ -141,6 +163,7 @@ export const getOrderById = asyncHandler(async (req, res, next) => {
 export const updateOrderStatus = asyncHandler(async (req, res, next) => {
   const { orderStatus } = req.body;
 
+  // STEP 1: enum validation is now centralized (keeps legacy values supported)
   const validStatuses = ["Processing", "Shipped", "Delivered", "Cancelled"];
 
   if (!validStatuses.includes(orderStatus)) {
@@ -153,8 +176,14 @@ export const updateOrderStatus = asyncHandler(async (req, res, next) => {
     throw new AppError("Order not found", 404);
   }
 
-  // If cancelling, restore stock
-  if (orderStatus === "Cancelled" && order.orderStatus !== "Cancelled") {
+  // Validate status value centrally (STEP 1 foundation)
+  if (!validateOrderStatusValue(orderStatus)) {
+    throw new AppError("Invalid order status", 400);
+  }
+
+  const previousStatus = order.orderStatus;
+  // If cancelling, restore stock (keep existing behavior)
+  if (orderStatus === "Cancelled" && previousStatus !== "Cancelled") {
     for (const item of order.orderItems) {
       await Product.findByIdAndUpdate(item.product, {
         $inc: { stock: item.quantity }
@@ -162,11 +191,13 @@ export const updateOrderStatus = asyncHandler(async (req, res, next) => {
     }
   }
 
-  order.orderStatus = orderStatus;
-
-  if (orderStatus === "Delivered") {
-    order.deliveredAt = new Date();
-  }
+  // STEP 1: record workflow transition history + update orderStatus via service
+  applyOrderStatusTransition({
+    order,
+    nextStatus: orderStatus,
+    changedBy: req.user._id,
+    reason: "admin_status_update"
+  });
 
   await order.save();
 
@@ -329,14 +360,21 @@ export const cancelOrder = asyncHandler(async (req, res, next) => {
     throw new AppError("Cannot cancel this order", 400);
   }
 
-  // Restore stock
+  // Restore stock (keep existing behavior)
   for (const item of order.orderItems) {
     await Product.findByIdAndUpdate(item.product, {
       $inc: { stock: item.quantity }
     });
   }
 
-  order.orderStatus = "Cancelled";
+  // STEP 1: record workflow transition history
+  applyOrderStatusTransition({
+    order,
+    nextStatus: "Cancelled",
+    changedBy: req.user._id,
+    reason: "user_cancel"
+  });
+
   await order.save();
 
   logger.info(`Order cancelled: ${order._id}`);

@@ -1,5 +1,7 @@
 import express from "express";
 import cors from "cors";
+import { securityHeaders } from "./middleware/securityHeaders.js";
+
 import dotenv from "dotenv";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -39,6 +41,10 @@ handleUnhandledRejection();
 
 import cookieParser from "cookie-parser";
 
+// Request correlation + request lifecycle logs (STEP 6)
+import { requestLogger } from "./observability/requestLogger.js";
+
+
 // CORS configuration
 const frontendOrigin =
   process.env.FRONTEND_URL && process.env.FRONTEND_URL !== "*"
@@ -55,12 +61,18 @@ app.use(cors({
 // Cookie parser for HttpOnly + CSRF tokens
 app.use(cookieParser());
 
+// STEP 6: request correlation + request lifecycle logging
+app.use(requestLogger);
 
 // Body parser - for raw body (webhooks)
 app.use("/api/webhooks/stripe", express.raw({ type: "application/json" }));
 
+// Security headers (STEP 7)
+app.use(securityHeaders);
+
 // Body parser - for regular JSON
 app.use(express.json({ limit: "10mb" }));
+
 
 // URL encoded parser
 app.use(express.urlencoded({ extended: true, limit: "10mb" }));

@@ -25,8 +25,21 @@ export const errorMiddleware = (err, req, res, next) => {
   error.message = err.message;
   error.statusCode = err.statusCode || 500;
 
-  // Log error for debugging
-  logger.error(`${err.statusCode || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+  const reqLogger = req?.logger;
+
+  // Log error for debugging (with request correlation when available)
+  if (reqLogger) {
+    reqLogger.error("request_error", {
+      statusCode: err.statusCode || 500,
+      message: err.message,
+      originalUrl: req.originalUrl,
+      method: req.method,
+      ip: req.ip
+    });
+  } else {
+    logger.error(`${err.statusCode || 500} - ${err.message} - ${req.originalUrl} - ${req.method} - ${req.ip}`);
+  }
+
 
   // Mongoose bad ObjectId
   if (err.name === "CastError") {
