@@ -26,7 +26,20 @@ export const issueCsrfCookie = asyncHandler(async (req, res) => {
     ...(domain ? { domain } : {})
   };
 
+  // Diagnostics for production lifecycle
   res.cookie("XSRF-TOKEN", csrfToken, csrfCookieOptions);
+
+  const setCookieHeader = res.getHeader("Set-Cookie");
+  console.log("CSRF COOKIE SET endpoint:", {
+    hasSetCookie: Boolean(setCookieHeader),
+    sameSite,
+    secure,
+    httpOnly: false,
+    path: csrfCookieOptions.path,
+    domain: csrfCookieOptions.domain,
+  });
+
   return res.json({ success: true });
+
 });
 

@@ -16,9 +16,19 @@ export const requireCsrf = asyncHandler(async (req, res, next) => {
   const cookieToken = req.cookies?.["XSRF-TOKEN"];
   const headerToken = req.headers["x-csrf-token"];
 
-  console.log("CSRF COOKIE:", cookieToken);
-  console.log("CSRF HEADER:", headerToken);
-  console.log("TOKENS MATCH:", cookieToken === headerToken);
+  // Extra production diagnostics (safe: no token values logged).
+  console.log("CSRF DEBUG: incomingCookies.has(XSRF-TOKEN)=", Boolean(cookieToken));
+  console.log("CSRF DEBUG: header x-csrf-token present=", Boolean(headerToken));
+  console.log("CSRF DEBUG: cookieTokenLength=", cookieToken ? String(cookieToken).length : 0);
+  console.log("CSRF DEBUG: headerTokenLength=", headerToken ? String(headerToken).length : 0);
+  console.log("CSRF DEBUG: TOKENS MATCH:", cookieToken && headerToken ? cookieToken === headerToken : false);
+
+  // Log raw header keys for casing/expectation debugging.
+  console.log(
+    "CSRF DEBUG: request header keys:",
+    Object.keys(req.headers || {}).filter((k) => k.toLowerCase().includes("csrf"))
+  );
+
 
   if (!cookieToken || !headerToken || cookieToken !== headerToken) {
     return res.status(403).json({ success: false, message: "Invalid CSRF token" });
