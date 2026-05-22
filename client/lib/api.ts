@@ -633,23 +633,21 @@ export function transformCart(cartData: CartData) {
  */
 export async function getCart(): Promise<ApiResponse<CartData>> {
   try {
-    const response = await fetch(`${API_URL}/cart`, {
+    const response = await fetchWithAuth<CartData>("/cart", {
+      method: "GET",
       credentials: "include",
     });
 
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to fetch cart",
+        message: response.message || "Failed to fetch cart",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error fetching cart:", error);

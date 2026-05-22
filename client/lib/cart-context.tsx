@@ -9,6 +9,7 @@ import {
   type ReactNode,
 } from "react";
 import type { Product } from "@/components/product/product-card";
+import { useAuth } from "@/lib/auth-context";
 import {
   getCart as fetchCartFromApi,
   addToCart as addToCartApi,
@@ -40,13 +41,31 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+function toCartItems(cartData: ReturnType<typeof transformCart>): CartItem[] {
+  return cartData.items.map((item) => ({
+    product: item.product,
+    quantity: item.quantity,
+    size: undefined,
+    color: undefined,
+  }));
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
+  const { user, isLoading: isAuthLoading } = useAuth();
   const [items, setItems] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Fetch cart from backend on mount
+  const isAuthenticated = Boolean(user);
+
   const fetchCart = useCallback(async () => {
+    if (!isAuthenticated) {
+      setItems([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     try {
       setLoading(true);
       setError(null);
@@ -55,20 +74,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
       
       if (response.success && response.data) {
         const transformedCart = transformCart(response.data);
-        
-        // Convert backend cart items to frontend format
-        const cartItems: CartItem[] = transformedCart.items.map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-          // Backend doesn't have size/color, so we use defaults
-          size: undefined,
-          color: undefined,
-        }));
-        
-        setItems(cartItems);
-      } else if (response.message && response.message.includes("logged in")) {
-        // User not logged in, use empty cart (local state)
-        setItems([]);
+        setItems(toCartItems(transformedCart));
+      } else {
+        setError(response.message || "Failed to load cart");
       }
     } catch (err) {
       console.error("Error fetching cart:", err);
@@ -76,15 +84,46 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAuthenticated]);
 
-  // Fetch cart on mount
   useEffect(() => {
+    if (isAuthLoading) {
+      setLoading(true);
+      return;
+    }
+
+    if (!isAuthenticated) {
+      setItems([]);
+      setError(null);
+      setLoading(false);
+      return;
+    }
+
     fetchCart();
-  }, [fetchCart]);
+  }, [fetchCart, isAuthenticated, isAuthLoading]);
 
   const addItem = useCallback(
     async (product: Product, quantity = 1, size?: string, color?: string) => {
+      if (!isAuthenticated) {
+        setItems((prev) => {
+          const existingIndex = prev.findIndex(
+            (item) =>
+              item.product.id === product.id &&
+              item.size === size &&
+              item.color === color
+          );
+
+          if (existingIndex > -1) {
+            const updated = [...prev];
+            updated[existingIndex].quantity += quantity;
+            return updated;
+          }
+
+          return [...prev, { product, quantity, size, color }];
+        });
+        return;
+      }
+
       try {
         // Call backend API
         const response = await addToCartApi(product.id, quantity);
@@ -92,13 +131,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
         if (response.success && response.data) {
           // Refresh cart from backend
           const transformedCart = transformCart(response.data);
-          const cartItems: CartItem[] = transformedCart.items.map((item) => ({
-            product: item.product,
-            quantity: item.quantity,
-            size: undefined,
-            color: undefined,
-          }));
-          setItems(cartItems);
+          setItems(toCartItems(transformedCart));
         } else {
           // If API fails (e.g., not logged in), fall back to local state
           setItems((prev) => {
@@ -139,10 +172,15 @@ export function CartProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    []
+    [isAuthenticated]
   );
 
   const removeItem = useCallback(async (productId: string) => {
+    if (!isAuthenticated) {
+      setItems((prev) => prev.filter((item) => item.product.id !== productId));
+      return;
+    }
+
     try {
       // Call backend API
       const response = await removeFromCartApi(productId);
@@ -150,13 +188,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (response.success && response.data) {
         // Refresh cart from backend
         const transformedCart = transformCart(response.data);
-        const cartItems: CartItem[] = transformedCart.items.map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-          size: undefined,
-          color: undefined,
-        }));
-        setItems(cartItems);
+        setItems(toCartItems(transformedCart));
       } else {
         // Fall back to local state
         setItems((prev) => prev.filter((item) => item.product.id !== productId));
@@ -166,10 +198,19 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Fall back to local state
       setItems((prev) => prev.filter((item) => item.product.id !== productId));
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const updateQuantity = useCallback(async (productId: string, quantity: number) => {
     if (quantity < 1) return;
+
+    if (!isAuthenticated) {
+      setItems((prev) =>
+        prev.map((item) =>
+          item.product.id === productId ? { ...item, quantity } : item
+        )
+      );
+      return;
+    }
     
     try {
       // Call backend API
@@ -178,13 +219,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       if (response.success && response.data) {
         // Refresh cart from backend
         const transformedCart = transformCart(response.data);
-        const cartItems: CartItem[] = transformedCart.items.map((item) => ({
-          product: item.product,
-          quantity: item.quantity,
-          size: undefined,
-          color: undefined,
-        }));
-        setItems(cartItems);
+        setItems(toCartItems(transformedCart));
       } else {
         // Fall back to local state
         setItems((prev) =>
@@ -202,9 +237,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
         )
       );
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const clearCart = useCallback(async () => {
+    if (!isAuthenticated) {
+      setItems([]);
+      return;
+    }
+
     try {
       // Call backend API
       const response = await clearCartApi();
@@ -220,7 +260,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       // Fall back to local state
       setItems([]);
     }
-  }, []);
+  }, [isAuthenticated]);
 
   const refreshCart = useCallback(async () => {
     await fetchCart();
