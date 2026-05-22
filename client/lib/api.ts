@@ -101,25 +101,22 @@ export async function createProduct(
       });
     }
 
-    const response = await fetch(`${API_URL}/products`, {
+    const response = await fetchWithAuth<any>("/products", {
       method: "POST",
       credentials: "include",
       body: formData,
     });
 
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to create product",
+        message: response.message || "Failed to create product",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error creating product:", error);
@@ -211,25 +208,22 @@ export async function updateProduct(
       });
     }
 
-    const response = await fetch(`${API_URL}/products/${productId}`, {
+    const response = await fetchWithAuth<any>(`/products/${productId}`, {
       method: "PUT",
       credentials: "include",
       body: formData,
     });
 
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to update product",
+        message: response.message || "Failed to update product",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error updating product:", error);
@@ -244,24 +238,21 @@ export async function deleteProduct(
   productId: string
 ): Promise<ApiResponse<any>> {
   try {
-    const response = await fetch(`${API_URL}/products/${productId}`, {
+    const response = await fetchWithAuth<any>(`/products/${productId}`, {
       method: "DELETE",
       credentials: "include",
     });
 
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to delete product",
+        message: response.message || "Failed to delete product",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error deleting product:", error);
@@ -474,7 +465,7 @@ export async function updateUserProfile(
   userData: UpdateUserProfileData
 ): Promise<ApiResponse<any>> {
   try {
-    const response = await fetch(`${API_URL}/users/profile`, {
+    const response = await fetchWithAuth<any>("/users/profile", {
       method: "PUT",
       credentials: "include",
       headers: {
@@ -484,18 +475,16 @@ export async function updateUserProfile(
     });
 
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to update profile",
+        message: response.message || "Failed to update profile",
       };
     }
 
     return {
       success: true,
-      data: data.data || data.user,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error updating profile:", error);
@@ -510,7 +499,7 @@ export async function updatePassword(
   passwordData: UpdatePasswordData
 ): Promise<ApiResponse<any>> {
   try {
-    const response = await fetch(`${API_URL}/users/password`, {
+    const response = await fetchWithAuth<any>("/users/password", {
       method: "PUT",
       credentials: "include",
       headers: {
@@ -519,20 +508,16 @@ export async function updatePassword(
       body: JSON.stringify(passwordData),
     });
 
-
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to update password",
+        message: response.message || "Failed to update password",
       };
     }
 
     return {
       success: true,
-      message: data.message || "Password updated successfully",
+      message: response.message || "Password updated successfully",
     };
   } catch (error) {
     console.error("Error updating password:", error);
@@ -683,7 +668,7 @@ export async function addToCart(
   quantity: number = 1
 ): Promise<ApiResponse<CartData>> {
   try {
-    const response = await fetch(`${API_URL}/cart`, {
+    const response = await fetchWithAuth<CartData>("/cart", {
       method: "POST",
       credentials: "include",
       headers: {
@@ -693,18 +678,16 @@ export async function addToCart(
     });
 
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to add item to cart",
+        message: response.message || "Failed to add item to cart",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error adding to cart:", error);
@@ -723,7 +706,7 @@ export async function updateCartItem(
   quantity: number
 ): Promise<ApiResponse<CartData>> {
   try {
-    const response = await fetch(`${API_URL}/cart/${productId}`, {
+    const response = await fetchWithAuth<CartData>(`/cart/${productId}`, {
       method: "PUT",
       credentials: "include",
       headers: {
@@ -733,18 +716,16 @@ export async function updateCartItem(
     });
 
 
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to update cart item",
+        message: response.message || "Failed to update cart item",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error updating cart item:", error);
@@ -762,24 +743,21 @@ export async function removeFromCart(
   productId: string
 ): Promise<ApiResponse<CartData>> {
   try {
-    const response = await fetch(`${API_URL}/cart/${productId}`, {
+    const response = await fetchWithAuth<CartData>(`/cart/${productId}`, {
       method: "DELETE",
       credentials: "include",
     });
 
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to remove item from cart",
+        message: response.message || "Failed to remove item from cart",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error removing from cart:", error);
@@ -795,24 +773,21 @@ export async function removeFromCart(
  */
 export async function clearCart(): Promise<ApiResponse<CartData>> {
   try {
-    const response = await fetch(`${API_URL}/cart`, {
+    const response = await fetchWithAuth<CartData>("/cart", {
       method: "DELETE",
       credentials: "include",
     });
 
-
-    const data = await response.json();
-
-    if (!response.ok) {
+    if (!response.success) {
       return {
         success: false,
-        message: data.message || "Failed to clear cart",
+        message: response.message || "Failed to clear cart",
       };
     }
 
     return {
       success: true,
-      data: data.data,
+      data: response.data,
     };
   } catch (error) {
     console.error("Error clearing cart:", error);

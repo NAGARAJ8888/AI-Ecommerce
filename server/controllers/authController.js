@@ -14,7 +14,7 @@ import {
 } from "../services/auth/refreshTokenService.js";
 
 import { generateToken } from "../middleware/authMiddleware.js";
-import { getCookieOptions } from "../utils/cookieOptions.js";
+import { getClearCookieOptions, getCookieOptions } from "../utils/cookieOptions.js";
 
 /**
  * @desc   Silent refresh with rotation (secure cookie-based)
@@ -71,38 +71,47 @@ export const refreshAuth = asyncHandler(async (req, res, next) => {
   });
 
   // Set cookies
-  const { secure, sameSite, httpOnly } = getCookieOptions({
+  const { secure, sameSite, httpOnly, path, domain } = getCookieOptions({
     req,
     type: "refresh",
     maxAgeMs: refreshMaxAgeMs
   });
 
-  res.cookie("refresh_token", newRefreshToken, {
+  const refreshCookieOptions = {
     httpOnly,
     secure,
     sameSite,
-    path: "/api/users",
-    maxAge: refreshMaxAgeMs
-  });
+    path,
+    maxAge: refreshMaxAgeMs,
+    ...(domain ? { domain } : {})
+  };
+  console.log("SETTING COOKIE:", "refresh_token", refreshCookieOptions);
+  res.cookie("refresh_token", newRefreshToken, refreshCookieOptions);
 
   // XSRF token: rotate on refresh as well (optional but increases security)
   const csrfToken = generateSecureToken(32);
-  res.cookie("XSRF-TOKEN", csrfToken, {
+  const csrfCookieOptions = {
     httpOnly: false,
     secure,
     sameSite,
-    path: "/api/users",
-    maxAge: refreshMaxAgeMs
-  });
+    path,
+    maxAge: refreshMaxAgeMs,
+    ...(domain ? { domain } : {})
+  };
+  console.log("SETTING COOKIE:", "XSRF-TOKEN", csrfCookieOptions);
+  res.cookie("XSRF-TOKEN", csrfToken, csrfCookieOptions);
 
   // Access token is short-lived; cookie should be HttpOnly for XSS resistance.
-  res.cookie("access_token", accessToken, {
+  const accessCookieOptions = {
     httpOnly: true,
     secure,
     sameSite,
-    path: "/api",
-    maxAge: 1000 * 60 * 10
-  });
+    path,
+    maxAge: 1000 * 60 * 10,
+    ...(domain ? { domain } : {})
+  };
+  console.log("SETTING COOKIE:", "access_token", accessCookieOptions);
+  res.cookie("access_token", accessToken, accessCookieOptions);
 
   return res.json({ success: true, data: { userId: user._id } });
 });
@@ -112,6 +121,7 @@ export const refreshAuth = asyncHandler(async (req, res, next) => {
  * @route  POST /api/users/logout
  */
 export const logoutAuth = asyncHandler(async (req, res, next) => {
+  console.log("LOGOUT AUTH CONTROLLER HIT");
   const refreshToken = req.cookies?.refresh_token;
   if (refreshToken) {
     const tokenHash = crypto.createHash("sha256").update(refreshToken).digest("hex");
@@ -121,9 +131,9 @@ export const logoutAuth = asyncHandler(async (req, res, next) => {
     }
   }
 
-  res.clearCookie("refresh_token", { path: "/api/users" });
-  res.clearCookie("access_token", { path: "/api" });
-  res.clearCookie("XSRF-TOKEN", { path: "/api/users" });
+  res.clearCookie("refresh_token", getClearCookieOptions({ type: "refresh" }));
+  res.clearCookie("access_token", getClearCookieOptions({ type: "access" }));
+  res.clearCookie("XSRF-TOKEN", getClearCookieOptions({ type: "csrf" }));
 
   return res.json({ success: true, message: "User logged out successfully" });
 });

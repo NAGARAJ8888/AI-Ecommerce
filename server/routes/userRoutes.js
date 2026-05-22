@@ -225,6 +225,12 @@ router.post("/wishlist/:productId", protect, requireCsrf, addToWishlist);
 router.delete("/wishlist/:productId", protect, requireCsrf, removeFromWishlist);
 router.post("/track", protect, requireCsrf, trackBrowsingHistory);
 router.get("/history", protect, getBrowsingHistory);
+
+// router.post("/logout", (req, res, next) => {
+//   console.log("LOGOUT ROUTE MATCHED");
+//   next();
+// }, requireCsrf, logoutAuth);
+
 router.post("/logout", requireCsrf, logoutAuth);
 
 

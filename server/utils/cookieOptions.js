@@ -1,25 +1,34 @@
 export const getCookieOptions = ({
-  req,
   type,
   maxAgeMs
 }) => {
-  const isProd = process.env.NODE_ENV === 'production';
+  const isProd = process.env.NODE_ENV === "production";
+  const configuredSameSite = process.env.COOKIE_SAMESITE;
+  const sameSite = isProd && configuredSameSite
+    ? configuredSameSite === "strict"
+      ? "strict"
+      : configuredSameSite === "none"
+        ? "none"
+        : "lax"
+    : "lax";
 
-  const sameSite = process.env.COOKIE_SAMESITE || 'lax'; // 'lax' recommended for most SaaS SPAs
-
-  const opts = {
-    httpOnly: type === 'refresh',
+  const options = {
+    httpOnly: type === "refresh",
     secure: isProd,
-    sameSite: sameSite === 'strict' ? 'strict' : sameSite === 'none' ? 'none' : 'lax',
-    path: type === 'refresh' ? '/api/users' : '/api',
-    maxAge: maxAgeMs ? Math.floor(maxAgeMs / 1000) : undefined
+    sameSite,
+    path: "/",
+    maxAge: maxAgeMs
   };
 
-  // Allow overriding domain for multi-subdomain deployments.
-  if (process.env.COOKIE_DOMAIN) {
-    opts.domain = process.env.COOKIE_DOMAIN;
+  if (isProd && process.env.COOKIE_DOMAIN) {
+    options.domain = process.env.COOKIE_DOMAIN;
   }
 
-  return opts;
+  return options;
+};
+
+export const getClearCookieOptions = ({ type } = {}) => {
+  const { maxAge, httpOnly, ...options } = getCookieOptions({ type });
+  return options;
 };
 

@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { fetchWithAuth } from "@/lib/auth/fetchWithAuth";
 
 interface User {
   id: string;
@@ -24,6 +25,22 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+const LOGGED_OUT_KEY = "auth:loggedOut";
+
+function isLoggedOut(): boolean {
+  if (typeof sessionStorage === "undefined") return false;
+  return sessionStorage.getItem(LOGGED_OUT_KEY) === "1";
+}
+
+function setLoggedOut(): void {
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.setItem(LOGGED_OUT_KEY, "1");
+}
+
+function clearLoggedOut(): void {
+  if (typeof sessionStorage === "undefined") return;
+  sessionStorage.removeItem(LOGGED_OUT_KEY);
+}
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -37,18 +54,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     let cancelled = false;
 
     const init = async () => {
+      console.log("Auth hydration start");
+
+      if (isLoggedOut()) {
+        console.log("Auth hydration skipped: explicit logged-out marker is set");
+        if (!cancelled) setIsLoading(false);
+        return;
+      }
+
       try {
-        const res = await fetch(`${API_URL}/users/me`, {
+        console.log("Auth hydration user restore attempt");
+        const data = await fetchWithAuth<any>("/users/me", {
           method: "GET",
           credentials: "include",
         });
 
-        if (!res.ok) return;
-        const data = await res.json();
+        if (!data.success) {
+          console.log("Auth hydration user restore failed:", data);
+          return;
+        }
         if (cancelled) return;
 
         const u = data?.data;
         if (u) {
+          console.log("Auth hydration user restored:", u._id);
           setUser({
             id: u._id,
             name: u.name,
@@ -87,6 +116,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.message || "Login failed");
     }
 
+    console.log("document.cookie:", document.cookie);
+    console.log("document.cookie includes XSRF-TOKEN:", document.cookie.includes("XSRF-TOKEN"));
+
+    clearLoggedOut();
+
     const userData = {
       id: data.data._id,
       name: data.data.name,
@@ -115,6 +149,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       throw new Error(data.message || "Registration failed");
     }
 
+    clearLoggedOut();
+
     const userData = {
       id: data.data._id,
       name: data.data.name,
@@ -129,16 +165,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = useCallback(async () => {
     try {
-      await fetch(`${API_URL}/users/logout`, {
+      const response = await fetchWithAuth("/users/logout", {
         method: "POST",
         credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
       });
-    } catch (error) {
-      console.error("Logout error:", error);
-    } finally {
+
+      console.log("Logout response:", response);
+
+      if (!response.success) {
+        console.log("Logout failed:", response);
+        return;
+      }
+
+      console.log("Logout succeeded");
+      setLoggedOut();
       setUser(null);
       setToken(null);
 
@@ -147,6 +190,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (isProtectedRoute) {
         router.push("/");
       }
+    } catch (error) {
+      console.log("Logout failed:", error);
+      console.error("Logout error:", error);
     }
   }, [API_URL, router, pathname]);
 

@@ -11,7 +11,7 @@ import {
   revokeFamilyTokens,
   rotateRefreshToken
 } from "../services/auth/refreshTokenService.js";
-import { getCookieOptions } from "../utils/cookieOptions.js";
+import { getClearCookieOptions, getCookieOptions } from "../utils/cookieOptions.js";
 
 
 
@@ -111,32 +111,40 @@ export const loginUser = asyncHandler(async (req, res, next) => {
     maxAgeMs: refreshMaxAgeMs
   });
 
-  res.cookie('refresh_token', refreshToken, {
+  const refreshCookieOptions = {
     httpOnly,
     secure,
     sameSite,
-    path: '/api/users',
+    path,
     maxAge: refreshMaxAgeMs,
     ...(domain ? { domain } : {})
-  });
+  };
+  console.log("SETTING COOKIE:", "refresh_token", refreshCookieOptions);
+  res.cookie('refresh_token', refreshToken, refreshCookieOptions);
 
-  res.cookie('access_token', accessToken, {
+  const accessCookieOptions = {
     httpOnly: true,
     secure,
     sameSite,
-    path: '/api',
-    maxAge: 1000 * 60 * 10
-  });
+    path,
+    maxAge: 1000 * 60 * 10,
+    ...(domain ? { domain } : {})
+  };
+  console.log("SETTING COOKIE:", "access_token", accessCookieOptions);
+  res.cookie('access_token', accessToken, accessCookieOptions);
 
   // CSRF: set XSRF-TOKEN readable cookie with random value
   const csrfToken = generateSecureToken(32);
-  res.cookie('XSRF-TOKEN', csrfToken, {
+  const csrfCookieOptions = {
     httpOnly: false,
     secure,
     sameSite,
-    path: '/api/users',
-    maxAge: refreshMaxAgeMs
-  });
+    path,
+    maxAge: refreshMaxAgeMs,
+    ...(domain ? { domain } : {})
+  };
+  console.log("SETTING COOKIE:", "XSRF-TOKEN", csrfCookieOptions);
+  res.cookie('XSRF-TOKEN', csrfToken, csrfCookieOptions);
 
   res.json({
     success: true,
@@ -284,6 +292,8 @@ export const getAllUsers = asyncHandler(async (req, res, next) => {
  * @access  Private/Admin
  */
 export const getUserById = asyncHandler(async (req, res, next) => {
+  console.log("WRONG ROUTE HIT:", req.originalUrl);
+  console.log("PARAMS:", req.params);
   const user = await User.findById(req.params.id)
     .select("-password")
     .populate("wishlist", "name price images")
@@ -556,12 +566,19 @@ export const updateUserPassword = updatePassword;
  * @access  Private
  */
 export const logoutUser = asyncHandler(async (req, res, next) => {
+  console.log("LOGOUT CONTROLLER HIT");
   // Best-effort: clear cookies.
   // Proper revocation requires refresh-token rotation lookup by token hash;
   // wire it once /api/users/refresh is fully integrated.
-  res.clearCookie('refresh_token', { path: '/api/users' });
-  res.clearCookie('access_token', { path: '/api' });
-  res.clearCookie('XSRF-TOKEN', { path: '/api/users' });
+  console.log("COOKIES BEFORE CLEAR:", req.cookies);
+
+  res.clearCookie('refresh_token', getClearCookieOptions({ type: 'refresh' }));
+  res.clearCookie('access_token', getClearCookieOptions({ type: 'access' }));
+  res.clearCookie('XSRF-TOKEN', getClearCookieOptions({ type: 'csrf' }));
+
+  console.log("COOKIES CLEARED");
+
+  
 
   res.json({
     success: true,
