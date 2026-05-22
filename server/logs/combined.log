@@ -63,3 +63,7 @@
 {"level":"error","message":"500 - Cast to ObjectId failed for value \"logout\" (type string) at path \"_id\" for model \"User\" - /api/users/logout - GET - ::1","timestamp":"2026-05-21T15:36:38.278Z"}
 {"level":"info","message":"Item added to cart: Classic Analog Watch by user 69f1dccd2c9b59c750a248e0","timestamp":"2026-05-22T07:58:13.976Z"}
 {"level":"info","message":"Cart cleared by user 69f1dccd2c9b59c750a248e0","timestamp":"2026-05-22T07:58:30.399Z"}
+{"level":"error","message":"401 - Invalid credentials - /api/users/login - POST - ::1","timestamp":"2026-05-22T08:34:09.580Z"}
+{"level":"info","message":"Item added to cart: Minimalist Wool Coat by user 69f1dccd2c9b59c750a248e0","timestamp":"2026-05-22T08:58:56.039Z"}
+{"level":"info","message":"Order created: 6a101afca5979f3ceb0a354e by user 69f1dccd2c9b59c750a248e0","timestamp":"2026-05-22T08:59:40.304Z"}
+{"level":"info","message":"Cart cleared by user 69f1dccd2c9b59c750a248e0","timestamp":"2026-05-22T08:59:40.322Z"}

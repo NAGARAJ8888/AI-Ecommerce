@@ -144,6 +144,7 @@ export const logoutAuth = asyncHandler(async (req, res, next) => {
   return res.json({ success: true, message: "User logged out successfully" });
 });
 
+
 /**
  * @desc   Get current user using access cookie
  */

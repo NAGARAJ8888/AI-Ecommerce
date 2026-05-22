@@ -21,13 +21,11 @@ function isUnsafeMethod(method: string | undefined): boolean {
 function requestInterceptor(init: RequestInit = {}): RequestInit {
   const headers = new Headers(init.headers || {});
 
+  // Double-submit CSRF: token must come from readable cookie
   if (isUnsafeMethod(init.method)) {
     const csrf = getCookie("XSRF-TOKEN");
-    console.log("FETCHWITHAUTH CSRF:", csrf);
     headers.set("X-CSRF-Token", csrf || "");
   }
-
-  console.log("FINAL HEADERS:", headers);
 
   return {
     ...init,
@@ -35,6 +33,7 @@ function requestInterceptor(init: RequestInit = {}): RequestInit {
     headers
   };
 }
+
 
 async function fetchJson<T>(url: string, init?: RequestInit): Promise<ApiResponse<T>> {
   const res = await fetch(url, init);
@@ -45,8 +44,26 @@ async function fetchJson<T>(url: string, init?: RequestInit): Promise<ApiRespons
   return data;
 }
 
+async function ensureCsrfCookie(): Promise<boolean> {
+  try {
+    const res = await fetch(`${API_URL}/users/csrf`, {
+      method: "GET",
+      credentials: "include",
+      headers: {
+        "Accept": "application/json"
+      }
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function attemptSilentRefresh(): Promise<boolean> {
   if (isLoggedOut()) return false;
+
+  // Ensure CSRF cookie exists before refresh/logout-like calls.
+  await ensureCsrfCookie();
 
   try {
     const refreshInit = requestInterceptor({
@@ -65,6 +82,7 @@ async function attemptSilentRefresh(): Promise<boolean> {
   }
 }
 
+
 export async function fetchWithAuth<T>(
   path: string,
   init: RequestInit = {}
@@ -73,11 +91,20 @@ export async function fetchWithAuth<T>(
 
   // Always send cookies
   const attempt = async () => {
+    // For unsafe methods, make sure CSRF cookie exists first.
+    if (isUnsafeMethod(init.method)) {
+      const existing = getCookie("XSRF-TOKEN");
+      if (!existing) {
+        await ensureCsrfCookie();
+      }
+    }
+
     const requestInit = requestInterceptor(init);
     return fetchJson<T>(url, requestInit);
   };
 
   const resp = await attempt();
+
 
   // If unauthorized, attempt silent refresh once.
   if (resp && resp.success === false && resp.status === 401) {

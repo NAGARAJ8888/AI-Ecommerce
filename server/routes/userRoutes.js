@@ -206,14 +206,21 @@ const router = express.Router();
 
 import { refreshAuth, logoutAuth, me } from "../controllers/authController.js";
 import { requireCsrf } from "../middleware/auth/requireCsrf.js";
+import { issueCsrfCookie } from "../controllers/csrfController.js";
+
 
 // Public routes
 router.post("/register", registerUser);
 router.post("/login", loginUser);
 
+// CSRF bootstrap for cross-origin SPAs.
+// Always issues/rotates XSRF-TOKEN cookie so unsafe requests can validate.
+router.get("/csrf", issueCsrfCookie);
+
 // Cookie-based auth endpoints
 router.post("/refresh", requireCsrf, refreshAuth);
 router.get("/me", protect, me);
+
 
 // Protected routes (CSRF-protected for unsafe methods)
 router.get("/profile", protect, getUserProfile);

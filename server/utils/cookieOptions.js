@@ -6,19 +6,12 @@ export const getCookieOptions = ({
 }) => {
   const isProd = process.env.NODE_ENV === "production";
 
-  // Default behavior:
-  // - localhost/dev: lax, secure=false
-  // - production cross-site (frontend/back on different domains): needs SameSite=None + Secure
-  const configuredSameSite = process.env.COOKIE_SAMESITE;
-  const sameSite = isProd
-    ? (configuredSameSite
-        ? configuredSameSite === "strict"
-          ? "strict"
-          : configuredSameSite === "none"
-            ? "none"
-            : "lax"
-        : (process.env.COOKIE_CROSS_SITE === "true" ? "none" : "lax"))
-    : "lax";
+  // For cross-origin SPA (frontend/back on different domains) cookies must be:
+  //   SameSite=None; Secure
+  // Otherwise browsers will silently drop them.
+  //
+  // Dev/localhost must remain compatible (Secure=false, SameSite=Lax).
+  const sameSite = isProd ? "none" : "lax";
 
   const options = {
     httpOnly: type === "refresh" || type === "access",
@@ -28,12 +21,15 @@ export const getCookieOptions = ({
     maxAge: maxAgeMs
   };
 
+  // Only set domain if explicitly configured.
+  // Misconfigured domain is a common reason cookies won't store in production.
   if (isProd && process.env.COOKIE_DOMAIN) {
     options.domain = process.env.COOKIE_DOMAIN;
   }
 
   return options;
 };
+
 
 export const getClearCookieOptions = ({ type } = {}) => {
   const { maxAge, httpOnly, ...options } = getCookieOptions({ type });
