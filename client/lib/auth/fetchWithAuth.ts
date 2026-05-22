@@ -31,9 +31,9 @@ function requestInterceptor(init: RequestInit = {}): RequestInit {
     console.log("CSRF CLIENT DEBUG: extracted csrf length=", csrf ? csrf.length : 0);
     console.log("CSRF CLIENT DEBUG: extracted csrf=", csrf);
 
-    if (csrf) {
-      headers.set("X-CSRF-Token", csrf);
-    }
+    // Always set header key even if empty, to make it obvious in request diagnostics.
+    headers.set("X-CSRF-Token", csrf || "");
+
   }
 
   return {
@@ -103,13 +103,25 @@ export async function fetchWithAuth<T>(
   const attempt = async () => {
     // For unsafe methods, make sure CSRF cookie exists first.
     if (isUnsafeMethod(init.method)) {
-      const existing = getCookie("XSRF-TOKEN");
-      if (!existing) {
+      const existingBefore = getCookie("XSRF-TOKEN");
+      console.log("CSRF CLIENT DEBUG (before ensure): extracted csrf length=", existingBefore ? existingBefore.length : 0);
+
+      if (!existingBefore) {
         await ensureCsrfCookie();
       }
+
+      const existingAfter = getCookie("XSRF-TOKEN");
+      console.log("CSRF CLIENT DEBUG (after ensure): extracted csrf length=", existingAfter ? existingAfter.length : 0);
     }
 
     const requestInit = requestInterceptor(init);
+
+    const headerDebug = (requestInit.headers instanceof Headers)
+      ? (requestInit.headers.get("X-CSRF-Token") || "")
+      : (requestInit.headers as any)?.["X-CSRF-Token"] || "";
+
+    console.log("CSRF CLIENT DEBUG: final request X-CSRF-Token length=", headerDebug ? String(headerDebug).length : 0);
+
     return fetchJson<T>(url, requestInit);
   };
 
