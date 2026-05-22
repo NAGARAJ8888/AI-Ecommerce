@@ -39,7 +39,10 @@ export const issueCsrfCookie = asyncHandler(async (req, res) => {
     domain: csrfCookieOptions.domain,
   });
 
-  return res.json({ success: true });
+  return res.json({
+    success: true,
+    csrfToken
+  });
 
 });
 
