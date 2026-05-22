@@ -91,13 +91,19 @@ export const refreshAuth = asyncHandler(async (req, res, next) => {
   // XSRF token: rotate on refresh as well (optional but increases security)
   const csrfToken = generateSecureToken(32);
   const csrfCookieOptions = {
-    httpOnly: false,
-    secure,
-    sameSite,
-    path,
-    maxAge: refreshMaxAgeMs,
-    ...(domain ? { domain } : {})
+    ...getCookieOptions({
+      type: "csrf",
+      maxAgeMs: refreshMaxAgeMs
+    }),
+    // Override for CSRF cookie: must be readable by JS (not HttpOnly)
+    httpOnly: false
   };
+
+  // Ensure cross-origin cookie attributes are preserved
+  if (domain) {
+    csrfCookieOptions.domain = domain;
+  }
+
   console.log("SETTING COOKIE:", "XSRF-TOKEN", csrfCookieOptions);
   res.cookie("XSRF-TOKEN", csrfToken, csrfCookieOptions);
 

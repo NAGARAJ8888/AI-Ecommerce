@@ -136,15 +136,17 @@ export const loginUser = asyncHandler(async (req, res, next) => {
   // CSRF: set XSRF-TOKEN readable cookie with random value
   const csrfToken = generateSecureToken(32);
   const csrfCookieOptions = {
+    ...getCookieOptions({
+      req,
+      type: "csrf",
+      maxAgeMs: refreshMaxAgeMs
+    }),
+    // Override for CSRF cookie: must be readable by JS (not HttpOnly)
     httpOnly: false,
-    secure,
-    sameSite,
-    path,
-    maxAge: refreshMaxAgeMs,
-    ...(domain ? { domain } : {})
   };
+
   console.log("SETTING COOKIE:", "XSRF-TOKEN", csrfCookieOptions);
-  res.cookie('XSRF-TOKEN', csrfToken, csrfCookieOptions);
+  res.cookie("XSRF-TOKEN", csrfToken, csrfCookieOptions);
 
   res.json({
     success: true,
