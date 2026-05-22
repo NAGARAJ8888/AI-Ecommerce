@@ -251,3 +251,17 @@
 {"durationMs":14,"level":"info","message":"request_end","requestId":"f0014b9d-a418-4a08-99a7-e81361fb2584","statusCode":200,"timestamp":"2026-05-22T16:56:55.602Z"}
 {"ip":"::1","level":"info","message":"request_start","method":"GET","requestId":"a8eb38b9-f585-4e62-8c6d-fa098498bd8e","timestamp":"2026-05-22T16:56:56.830Z","url":"/api/products/featured?limit=4"}
 {"durationMs":12,"level":"info","message":"request_end","requestId":"a8eb38b9-f585-4e62-8c6d-fa098498bd8e","statusCode":200,"timestamp":"2026-05-22T16:56:56.842Z"}
+{"ip":"::1","level":"info","message":"request_start","method":"GET","requestId":"beb18bf7-16c4-400d-b817-9894fc742737","timestamp":"2026-05-22T17:24:34.509Z","url":"/api/products/featured?limit=4"}
+{"durationMs":53,"level":"info","message":"request_end","requestId":"beb18bf7-16c4-400d-b817-9894fc742737","statusCode":200,"timestamp":"2026-05-22T17:24:34.560Z"}
+{"ip":"::1","level":"info","message":"request_start","method":"POST","requestId":"9d95e794-69d8-47b9-be0e-6ced66194848","timestamp":"2026-05-22T17:25:12.841Z","url":"/api/users/login"}
+{"durationMs":122,"level":"info","message":"request_end","requestId":"9d95e794-69d8-47b9-be0e-6ced66194848","statusCode":200,"timestamp":"2026-05-22T17:25:12.963Z"}
+{"ip":"::1","level":"info","message":"request_start","method":"GET","requestId":"fd84eca7-8a90-4fca-ba06-526637ba4f71","timestamp":"2026-05-22T17:25:13.004Z","url":"/api/cart"}
+{"durationMs":15,"level":"info","message":"request_end","requestId":"fd84eca7-8a90-4fca-ba06-526637ba4f71","statusCode":200,"timestamp":"2026-05-22T17:25:13.019Z"}
+{"ip":"::1","level":"info","message":"request_start","method":"GET","requestId":"2bf28084-566e-4ab0-9469-c7ce6e985901","timestamp":"2026-05-22T17:25:16.627Z","url":"/api/users/csrf"}
+{"durationMs":3,"level":"info","message":"request_end","requestId":"2bf28084-566e-4ab0-9469-c7ce6e985901","statusCode":200,"timestamp":"2026-05-22T17:25:16.630Z"}
+{"ip":"::1","level":"info","message":"request_start","method":"POST","requestId":"9cde62ab-a491-4769-9bfb-78d2eb64779c","timestamp":"2026-05-22T17:25:16.645Z","url":"/api/users/logout"}
+{"durationMs":13,"level":"info","message":"request_end","requestId":"9cde62ab-a491-4769-9bfb-78d2eb64779c","statusCode":200,"timestamp":"2026-05-22T17:25:16.658Z"}
+{"ip":"::1","level":"info","message":"request_start","method":"GET","requestId":"72ed6008-1e0c-4a8c-a177-39c172376800","timestamp":"2026-05-22T17:25:39.883Z","url":"/api/products/featured?limit=4"}
+{"durationMs":24,"level":"info","message":"request_end","requestId":"72ed6008-1e0c-4a8c-a177-39c172376800","statusCode":200,"timestamp":"2026-05-22T17:25:39.907Z"}
+{"ip":"::1","level":"info","message":"request_start","method":"GET","requestId":"568e4fe0-d8ac-4daa-9b0a-f0fc7f85ba00","timestamp":"2026-05-22T17:26:52.495Z","url":"/api/products/featured?limit=4"}
+{"durationMs":23,"level":"info","message":"request_end","requestId":"568e4fe0-d8ac-4daa-9b0a-f0fc7f85ba00","statusCode":200,"timestamp":"2026-05-22T17:26:52.518Z"}

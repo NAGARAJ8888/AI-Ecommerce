@@ -5,7 +5,7 @@ import { logger } from "../utils/logger.js";
 
 dotenv.config();
 
-const redisUrl = process.env.REDIS_URL || "redis://127.0.0.1:6380";
+const redisUrl = process.env.REDIS_URL;
 
 export const redisConnection = new IORedis(redisUrl, {
   maxRetriesPerRequest: 1,
