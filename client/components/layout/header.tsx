@@ -5,9 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState, useEffect } from "react";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingBag, User, LogOut } from "lucide-react";
+import { Menu, ShoppingBag, Heart, User, LogOut } from "lucide-react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 
 const navigation = [
@@ -18,6 +19,7 @@ const navigation = [
 
 export function Header() {
   const { totalItems } = useCart();
+  const { totalItems: wishlistItems } = useWishlist();
   const { user, logout } = useAuth();
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const router = useRouter();
@@ -84,6 +86,27 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="relative"
+            onClick={() => {
+              if (!user) {
+                setIsAuthDialogOpen(true);
+              } else {
+                router.push("/wishlist");
+              }
+            }}
+          >
+            <Heart className="h-5 w-5" />
+            {wishlistItems > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs text-primary-foreground">
+                {wishlistItems}
+              </span>
+            )}
+            <span className="sr-only">Wishlist</span>
+          </Button>
+
           <Button 
             variant="ghost" 
             size="icon" 

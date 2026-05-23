@@ -150,6 +150,31 @@ export const logoutAuth = asyncHandler(async (req, res, next) => {
  */
 export const me = asyncHandler(async (req, res, next) => {
   // requireAuth middleware attaches req.user
-  res.json({ success: true, data: req.user });
+  const userId = req.user?._id || req.user?.id;
+  if (!userId) {
+    return res.status(401).json({ success: false, message: "Unauthorized" });
+  }
+
+  const user = await User.findById(userId)
+    .select("-password")
+    .populate({
+      path: "wishlist",
+      select:
+        "_id name price discountPrice images stock ratings numReviews category createdAt",
+      populate: {
+        path: "category",
+        select: "name slug"
+      }
+    });
+
+  if (!user) {
+    return res.status(404).json({ success: false, message: "User not found" });
+  }
+
+  // Filter out null/undefined wishlist products (handles deleted products safely)
+  user.wishlist = (user.wishlist || []).filter(Boolean);
+
+  res.json({ success: true, data: user });
 });
+
 

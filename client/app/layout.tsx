@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { CartProvider } from '@/lib/cart-context'
 import { AuthProvider } from '@/lib/auth-context'
+import { WishlistProvider } from '@/lib/wishlist-context'
 import { Toaster } from '@/components/ui/sonner'
 import './globals.css'
 
@@ -41,10 +42,12 @@ export default function RootLayout({
     <html lang="en">
       <body className="font-sans antialiased">
         <AuthProvider>
-          <CartProvider>
-            {children}
-            <Toaster position="top-center" richColors />
-          </CartProvider>
+          <WishlistProvider>
+            <CartProvider>
+              {children}
+              <Toaster position="top-center" richColors />
+            </CartProvider>
+          </WishlistProvider>
         </AuthProvider>
         <Analytics />
       </body>

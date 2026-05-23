@@ -10,6 +10,7 @@ import { ProductCard } from "@/components/product/product-card";
 import { getProductById as getProductByIdApi, transformProduct } from "@/lib/api";
 import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
+import { useWishlist } from "@/lib/wishlist-context";
 import { Button } from "@/components/ui/button";
 import {
   Accordion,
@@ -18,6 +19,7 @@ import {
   AccordionTrigger,
 } from "@/components/ui/accordion";
 import { ShoppingBag, Heart, Star, Minus, Plus, ChevronLeft } from "lucide-react";
+import { toast } from "sonner";
 
 interface ProductData {
   id: string;
@@ -43,9 +45,11 @@ export default function ProductDetailPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [relatedProducts, setRelatedProducts] = useState<ProductData[]>([]);
+  const [wishlistLoading, setWishlistLoading] = useState(false);
 
   const { addItem } = useCart();
   const { user } = useAuth();
+  const { isInWishlist, addToWishlist, removeFromWishlist } = useWishlist();
   const [selectedSize, setSelectedSize] = useState<string | undefined>();
   const [selectedColor, setSelectedColor] = useState<string | undefined>();
   const [quantity, setQuantity] = useState(1);
@@ -137,6 +141,45 @@ export default function ProductDetailPage() {
       reviews: product.reviews,
     };
     addItem(cartProduct as any, quantity, selectedSize, selectedColor);
+  };
+
+  const handleWishlistToggle = async () => {
+    if (!user) {
+      window.dispatchEvent(new CustomEvent("open-auth-dialog"));
+      return;
+    }
+
+    if (!product) return;
+
+    setWishlistLoading(true);
+    try {
+      const cartProduct = {
+        id: product.id,
+        name: product.name,
+        price: product.price,
+        originalPrice: product.originalPrice,
+        category: product.category,
+        categorySlug: product.categorySlug,
+        image: product.image,
+        images: product.images,
+        inStock: product.inStock,
+        rating: product.rating,
+        reviews: product.reviews,
+      };
+
+      if (isInWishlist(product.id)) {
+        await removeFromWishlist(product.id);
+        toast.success("Removed from wishlist");
+      } else {
+        await addToWishlist(cartProduct as any);
+        toast.success("Added to wishlist");
+      }
+    } catch (err) {
+      console.error("Error toggling wishlist:", err);
+      toast.error("Failed to update wishlist");
+    } finally {
+      setWishlistLoading(false);
+    }
   };
 
   return (
@@ -327,8 +370,24 @@ export default function ProductDetailPage() {
                   <ShoppingBag className="h-4 w-4 mr-2" />
                   ADD TO CART
                 </Button>
-                <Button size="lg" variant="outline">
-                  <Heart className="h-4 w-4" />
+                <Button
+                  size="lg"
+                  variant="outline"
+                  onClick={handleWishlistToggle}
+                  disabled={wishlistLoading}
+                  className={`transition-colors ${
+                    product && isInWishlist(product.id)
+                      ? "bg-red-50 border-red-200 hover:bg-red-100"
+                      : ""
+                  }`}
+                >
+                  <Heart
+                    className={`h-4 w-4 transition-all ${
+                      product && isInWishlist(product.id)
+                        ? "fill-red-500 text-red-500"
+                        : ""
+                    }`}
+                  />
                 </Button>
               </div>
 

@@ -955,3 +955,87 @@ export async function getOrderById(orderId: string): Promise<ApiResponse<Backend
   }
 }
 
+// Wishlist API Functions
+export async function addToWishlist(productId: string): Promise<ApiResponse<string[]>> {
+  try {
+    const response = await fetchWithAuth<string[]>(`/users/wishlist/${productId}`, {
+      method: "POST",
+      credentials: "include",
+    });
+
+    if (!response.success) {
+      return {
+        success: false,
+        message: response.message || "Failed to add to wishlist",
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("Error adding to wishlist:", error);
+    return {
+      success: false,
+      message: "An error occurred while adding to wishlist",
+    };
+  }
+}
+
+export async function removeFromWishlist(productId: string): Promise<ApiResponse<string[]>> {
+  try {
+    const response = await fetchWithAuth<string[]>(`/users/wishlist/${productId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+
+    if (!response.success) {
+      return {
+        success: false,
+        message: response.message || "Failed to remove from wishlist",
+      };
+    }
+
+    return {
+      success: true,
+      data: response.data,
+    };
+  } catch (error) {
+    console.error("Error removing from wishlist:", error);
+    return {
+      success: false,
+      message: "An error occurred while removing from wishlist",
+    };
+  }
+}
+
+export async function getWishlist(): Promise<ApiResponse<BackendProduct[]>> {
+  try {
+    const response = await fetchWithAuth<any>("/users/me", {
+      method: "GET",
+      credentials: "include",
+    });
+
+    if (!response.success) {
+      return {
+        success: false,
+        message: response.message || "Failed to fetch wishlist",
+      };
+    }
+
+    const wishlistProducts = response.data?.wishlist || [];
+    return {
+      success: true,
+      data: wishlistProducts,
+    };
+  } catch (error) {
+    console.error("Error fetching wishlist:", error);
+    return {
+      success: false,
+      message: "An error occurred while fetching wishlist",
+    };
+  }
+}
+
+

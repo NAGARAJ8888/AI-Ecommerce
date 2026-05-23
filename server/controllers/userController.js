@@ -172,7 +172,14 @@ export const loginUser = asyncHandler(async (req, res, next) => {
 export const getUserProfile = asyncHandler(async (req, res, next) => {
   const user = await User.findById(req.user._id)
     .select("-password")
-    .populate("wishlist", "name price images discountPrice")
+    .populate({
+      path: "wishlist",
+      select: "name price images discountPrice stock ratings numReviews category",
+      populate: {
+        path: "category",
+        select: "name slug"
+      }
+    })
     .populate("browsingHistory.product", "name price images");
 
   if (!user) {
@@ -296,10 +303,13 @@ export const getAllUsers = asyncHandler(async (req, res, next) => {
 export const getUserById = asyncHandler(async (req, res, next) => {
   console.log("WRONG ROUTE HIT:", req.originalUrl);
   console.log("PARAMS:", req.params);
-  const user = await User.findById(req.params.id)
-    .select("-password")
-    .populate("wishlist", "name price images")
-    .populate("browsingHistory.product", "name price images");
+  const user = await User.findById(req.user.id).populate({
+      path: 'wishlist',
+      populate: [
+        { path: 'category', select: 'name slug' },
+        { path: 'images' }
+      ]
+    });
 
   if (!user) {
     return next(new AppError("User not found", 404));
@@ -438,25 +448,49 @@ export const removeAddress = asyncHandler(async (req, res, next) => {
  * @access  Private
  */
 export const addToWishlist = asyncHandler(async (req, res, next) => {
-  const user = await User.findById(req.user._id);
+  const user = await User.findById(req.user._id)
+    .populate({
+      path: "wishlist",
+      populate: {
+        path: "category",
+        select: "name slug",
+      },
+      select: "name price discountPrice images stock ratings numReviews category",
+    });
+
   if (!user) {
     return next(new AppError("User not found", 404));
   }
 
   const productId = req.params.productId;
 
-  // Check if product already in wishlist
-  if (user.wishlist.includes(productId)) {
-    return next(new AppError("Product already in wishlist", 400));
+  // Proper ObjectId comparison
+  const alreadyExists = user.wishlist.some(
+    (id) => id.toString() === productId
+  );
+
+  if (alreadyExists) {
+    // Filter out null/undefined products (handles deleted products safely)
+    const wishlistProducts = (user.wishlist || []).filter(Boolean);
+
+    return res.status(200).json({
+      success: true,
+      message: "Product already in wishlist",
+      data: wishlistProducts,
+    });
   }
 
   user.wishlist.push(productId);
+
   await user.save();
 
-  res.json({
+  // Filter out null/undefined products (handles deleted products safely)
+  const wishlistProducts = (user.wishlist || []).filter(Boolean);
+
+  res.status(200).json({
     success: true,
     message: "Product added to wishlist",
-    data: user.wishlist
+    data: wishlistProducts,
   });
 });
 
