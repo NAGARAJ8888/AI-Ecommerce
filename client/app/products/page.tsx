@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useMemo, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
+import { useState, useMemo, useEffect, Suspense, useRef } from "react";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Header } from "@/components/layout/header";
 import { Footer } from "@/components/layout/footer";
 import { ProductCard, Product } from "@/components/product/product-card";
 import { getProducts, getCategories, transformProduct } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { SlidersHorizontal, Grid3X3, LayoutGrid } from "lucide-react";
+import { SlidersHorizontal, Grid3X3, LayoutGrid, Search, X } from "lucide-react";
 
 interface Category {
   _id: string;
@@ -24,6 +25,7 @@ interface Category {
 
 function ProductsContent() {
   const searchParams = useSearchParams();
+  const router = useRouter();
   const categoryParam = searchParams.get("category") || "all";
   const searchParam = searchParams.get("search") || "";
 
@@ -34,6 +36,63 @@ function ProductsContent() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [localSearchInput, setLocalSearchInput] = useState(searchParam);
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Debounced search handler
+  const handleSearchChange = (value: string) => {
+    setLocalSearchInput(value);
+
+    // Clear existing timer
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+
+    // Set new timer for debounced search
+    debounceTimerRef.current = setTimeout(() => {
+      const params = new URLSearchParams(searchParams.toString());
+      
+      if (value.trim()) {
+        params.set("search", value.trim());
+        if (selectedCategory !== "all") {
+          params.set("category", selectedCategory);
+        } else {
+          params.delete("category");
+        }
+      } else {
+        // Clear search
+        params.delete("search");
+        if (selectedCategory === "all") {
+          params.delete("category");
+        } else {
+          params.set("category", selectedCategory);
+        }
+      }
+      
+      router.push(`/products?${params.toString()}`);
+    }, 500); // 500ms debounce
+  };
+
+  // Clear search handler
+  const handleClearSearch = () => {
+    setLocalSearchInput("");
+    if (debounceTimerRef.current) {
+      clearTimeout(debounceTimerRef.current);
+    }
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("search");
+    if (selectedCategory === "all") {
+      params.delete("category");
+    } else {
+      params.set("category", selectedCategory);
+    }
+    router.push(`/products?${params.toString()}`);
+  };
+
+  // Update localSearchInput when searchParam changes (e.g., from URL)
+  useEffect(() => {
+    setLocalSearchInput(searchParam);
+  }, [searchParam]);
 
   // Update sortBy if search parameter changes
   useEffect(() => {
@@ -136,6 +195,29 @@ function ProductsContent() {
 
   return (
     <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {/* Search Bar */}
+      <div className="mb-8">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
+          <Input
+            type="text"
+            placeholder="Search products by name..."
+            className="pl-10 pr-10"
+            value={localSearchInput}
+            onChange={(e) => handleSearchChange(e.target.value)}
+          />
+          {localSearchInput && (
+            <button
+              onClick={handleClearSearch}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors"
+              aria-label="Clear search"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          )}
+        </div>
+      </div>
+
       {/* Filter Bar */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 pb-8 border-b border-border">
         <div className="flex flex-wrap gap-2">

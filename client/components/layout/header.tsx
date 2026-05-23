@@ -7,7 +7,7 @@ import { useCart } from "@/lib/cart-context";
 import { useAuth } from "@/lib/auth-context";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, ShoppingBag, Search, X, User, LogOut } from "lucide-react";
+import { Menu, ShoppingBag, User, LogOut } from "lucide-react";
 import { AuthDialog } from "@/components/auth/auth-dialog";
 
 const navigation = [
@@ -19,8 +19,6 @@ const navigation = [
 export function Header() {
   const { totalItems } = useCart();
   const { user, logout } = useAuth();
-  const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState("");
   const [isAuthDialogOpen, setIsAuthDialogOpen] = useState(false);
   const router = useRouter();
 
@@ -29,22 +27,6 @@ export function Header() {
     window.addEventListener("open-auth-dialog", handleOpenAuth);
     return () => window.removeEventListener("open-auth-dialog", handleOpenAuth);
   }, []);
-
-  const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      router.push(`/products?search=${encodeURIComponent(searchQuery.trim())}`);
-      setIsSearchOpen(false);
-      setSearchQuery("");
-    }
-  };
-
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Escape") {
-      setIsSearchOpen(false);
-      setSearchQuery("");
-    }
-  };
 
   return (
     <header className="sticky top-0 z-50 w-full border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -102,40 +84,6 @@ export function Header() {
 
         {/* Actions */}
         <div className="flex items-center gap-2">
-          {isSearchOpen ? (
-            <form onSubmit={handleSearch} className="flex items-center gap-2">
-              <input
-                type="text"
-                placeholder="Search..."
-                className="h-9 w-[120px] sm:w-[200px] rounded-md border border-input bg-transparent px-3 text-sm focus:outline-none focus:ring-1 focus:ring-ring"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyDown={handleKeyDown}
-                autoFocus
-              />
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => {
-                  setIsSearchOpen(false);
-                  setSearchQuery("");
-                }}
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </form>
-          ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setIsSearchOpen(true)}
-            >
-              <Search className="h-5 w-5" />
-              <span className="sr-only">Search</span>
-            </Button>
-          )}
-
           <Button 
             variant="ghost" 
             size="icon" 
