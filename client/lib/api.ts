@@ -3,6 +3,9 @@ const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
 import { fetchWithAuth } from "./auth/fetchWithAuth";
 
 
+
+
+
 interface ProductImage {
   url: string;
   public_id: string;

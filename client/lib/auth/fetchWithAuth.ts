@@ -71,16 +71,24 @@ async function ensureCsrfCookie(): Promise<boolean> {
 
     const data = await res.json();
 
+    // Backend returns: { success: true, csrfToken }
     if (data?.csrfToken) {
       setCsrfToken(data.csrfToken);
 
-      console.log(
-        "CSRF TOKEN STORED:",
-        data.csrfToken?.length || 0
-      );
+      console.log("CSRF TOKEN STORED:", data.csrfToken?.length || 0);
+    } else {
+      // Fallback: some backends might return { csrf } or similar.
+      const tokenFallback = (data as any)?.csrf || (data as any)?.XSRF_TOKEN;
+      if (typeof tokenFallback === "string" && tokenFallback.length > 0) {
+        setCsrfToken(tokenFallback);
+        console.log("CSRF TOKEN STORED (fallback):", tokenFallback.length);
+      } else {
+        console.log("CSRF TOKEN NOT FOUND IN RESPONSE:", Object.keys(data || {}));
+      }
     }
 
     return res.ok;
+
   } catch (error) {
     console.error("Failed to initialize CSRF token:", error);
 
